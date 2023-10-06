@@ -36,10 +36,8 @@ public class SimulationPanel extends JPanel {
     return timer.isRunning();
   }
 
-  public void resizeSimulation(Dimension size, boolean maximised) {
+  public void resizeSimulation(Dimension size) {
     simulation.resize((short) size.width, (short) size.height);
-    if (maximised) return;
-    setPreferredSize(size);
   }
 
   public void resume() {

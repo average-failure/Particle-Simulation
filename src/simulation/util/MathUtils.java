@@ -2,13 +2,9 @@ package simulation.util;
 
 import java.util.Random;
 
-public class MathUtils {
+public final class MathUtils {
 
   private static final Random RANDOM = new Random();
-
-  private MathUtils() {
-    throw new IllegalStateException("Utility class");
-  }
 
   public static double clamp(double value, double min, double max) {
     return Math.max(Math.min(value, max), min);
@@ -32,5 +28,9 @@ public class MathUtils {
 
   public static float randFloat(float bound) {
     return RANDOM.nextFloat(bound + Float.MIN_VALUE);
+  }
+
+  private MathUtils() {
+    throw new IllegalStateException("Utility class");
   }
 }

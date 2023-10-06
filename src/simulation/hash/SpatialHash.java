@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import simulation.Settings;
 
-public class SpatialHash implements Serializable {
+public final class SpatialHash implements Serializable {
 
   private static final long serialVersionUID = 7642507362804L;
 

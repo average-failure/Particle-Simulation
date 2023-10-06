@@ -12,22 +12,29 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JFrame;
+import javax.swing.JLayeredPane;
 import javax.swing.WindowConstants;
 
-public class SimulationFrame extends JFrame {
+public final class SimulationFrame extends JFrame {
 
-  private SimulationPanel simPanel;
+  private final JLayeredPane content = new JLayeredPane();
+
+  private boolean wasMaximised = false;
 
   public SimulationFrame() {
-    simPanel = new SimulationPanel();
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setTitle("Particle Simulation");
     setLayout(new BorderLayout());
-    Dimension size = Toolkit.getDefaultToolkit().getScreenSize();
-    simPanel.resizeSimulation(
-      new Dimension((int) (size.width * 0.8), (int) (size.height * 0.8)),
-      false
-    );
+    setContentPane(content);
+
+    final SimulationPanel simPanel = new SimulationPanel();
+    final Dimension size = Toolkit.getDefaultToolkit().getScreenSize();
+    size.setSize(size.width * 0.8, size.height * 0.8);
+    simPanel.resizeSimulation(size);
+    content.setLayout(new BorderLayout());
+    JLayeredPane.putLayer(simPanel, JLayeredPane.DEFAULT_LAYER);
+    content.add(simPanel, BorderLayout.CENTER);
+    content.setPreferredSize(size);
     minimise();
     simPanel.start();
 
@@ -40,7 +47,7 @@ public class SimulationFrame extends JFrame {
               System.exit(0);
               break;
             case KeyEvent.VK_F11:
-              if (isMaximized()) {
+              if (isMaximized(true)) {
                 minimise();
               } else maximise();
               break;
@@ -62,7 +69,7 @@ public class SimulationFrame extends JFrame {
         public void mousePressed(MouseEvent e) {
           int x = e.getX();
           int y = e.getY();
-          Insets insets = getInsets();
+          final Insets insets = getInsets();
           if (insets != null) {
             x -= insets.left;
             y -= insets.top;
@@ -76,39 +83,47 @@ public class SimulationFrame extends JFrame {
       new ComponentAdapter() {
         @Override
         public void componentResized(ComponentEvent e) {
-          simPanel.resizeSimulation(getInnerSize(), isMaximized());
+          Dimension innerSize = getInnerSize();
+          simPanel.resizeSimulation(innerSize);
+          if (!isMaximized(false)) content.setPreferredSize(innerSize);
         }
       }
     );
   }
 
-  private boolean isMaximized() {
-    return getExtendedState() == Frame.MAXIMIZED_BOTH && isVisible();
+  private boolean isMaximized(boolean isDecorated) {
+    return (
+      getExtendedState() == Frame.MAXIMIZED_BOTH &&
+      (!isDecorated || isUndecorated()) &&
+      isVisible()
+    );
   }
 
   private void maximise() {
-    if (isMaximized()) return;
+    if (isMaximized(true)) return;
+    if (getExtendedState() == Frame.MAXIMIZED_BOTH) wasMaximised = true;
     dispose();
     setUndecorated(true);
     setExtendedState(Frame.MAXIMIZED_BOTH);
-    add(simPanel, BorderLayout.CENTER);
     setVisible(true);
   }
 
   private void minimise() {
     if (getExtendedState() == Frame.NORMAL && isVisible()) return;
     dispose();
-    setExtendedState(Frame.NORMAL);
     setUndecorated(false);
-    add(simPanel, BorderLayout.CENTER);
     pack();
+    if (wasMaximised) {
+      setExtendedState(Frame.MAXIMIZED_BOTH);
+      wasMaximised = false;
+    } else setExtendedState(Frame.NORMAL);
     setLocationRelativeTo(null);
     setVisible(true);
   }
 
   private Dimension getInnerSize() {
-    Dimension size = getSize();
-    Insets insets = getInsets();
+    final Dimension size = getSize();
+    final Insets insets = getInsets();
     if (insets != null) {
       size.width -= insets.left + insets.right;
       size.height -= insets.top + insets.bottom;

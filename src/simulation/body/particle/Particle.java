@@ -4,90 +4,59 @@ import java.awt.Color;
 import java.util.stream.Stream;
 import simulation.Settings;
 import simulation.hash.Client;
-import simulation.util.Collision;
-import simulation.util.CollisionUtils;
 import simulation.util.MathUtils;
 import simulation.util.Vec2;
+import simulation.util.collision.Collision;
+import simulation.util.collision.CollisionUtils;
+import simulation.util.constructor.ParticleParams;
 
 public class Particle implements Client {
 
   private static final long serialVersionUID = 93427523424L;
 
-  private final Vec2 position;
-  private final Vec2 velocity;
-  private final short radius;
-  private final short mass;
+  protected final Vec2 position;
+  protected final Vec2 velocity;
+  protected final short radius;
+  protected final short mass;
   private short immortality;
   private byte intangibility;
   private float lifespan;
-  private Color colour;
-  private float initialLife;
+  protected Color colour;
+  private final float initialLife;
   private float lifeDrain = 1;
 
-  public Particle(float x, float y) {
-    this(
-      new Vec2(x, y),
-      new Vec2(0, 0),
-      MathUtils.randRange(Settings.MAX_MASS, Settings.MIN_MASS)
-    );
-  }
+  public Particle(ParticleParams p) {
+    position = new Vec2(p.position());
+    velocity = new Vec2(p.velocity());
 
-  public Particle(Vec2 position, Vec2 velocity, short mass) {
-    this(
-      position,
-      velocity,
-      mass,
-      (short) 0,
-      MathUtils.randRange(10_000, 1_000)
-    );
-  }
+    immortality = p.immortality();
+    intangibility = 0;
+    initialLife = p.initialLife();
+    lifespan = p.initialLife();
 
-  public Particle(Particle p) {
-    this.position = new Vec2(p.position);
-    this.velocity = new Vec2(p.velocity);
-
-    this.immortality = p.immortality;
-    this.intangibility = 0;
-    this.initialLife = p.initialLife;
-    this.lifespan = p.initialLife;
-
-    this.mass = p.mass;
-    this.radius =
+    mass = p.mass();
+    radius =
       (short) MathUtils.clamp(
-        p.radius,
+        (float) p.mass() / Settings.MASS_RADIUS_RATIO,
         Settings.MIN_RADIUS,
         Settings.MAX_RADIUS
       );
   }
 
-  public Particle(
-    Vec2 position,
-    Vec2 velocity,
-    short mass,
-    short immortality,
-    float initialLife
-  ) {
-    this.position = position;
-    this.velocity = velocity;
-
-    this.immortality = immortality;
-    this.intangibility = 0;
-    this.initialLife = initialLife;
-    this.lifespan = initialLife;
-
-    this.mass = mass;
-    this.radius =
-      (short) MathUtils.clamp(
-        (float) mass / Settings.MASS_RADIUS_RATIO,
-        Settings.MIN_RADIUS,
-        Settings.MAX_RADIUS
-      );
+  /**
+   * @return the immortality
+   */
+  public short getImmortality() {
+    return immortality;
   }
 
   public boolean collisionEnabled() {
     return intangibility <= 0;
   }
 
+  /**
+   * @return the radius
+   */
   public short getRadius() {
     return radius;
   }
@@ -96,6 +65,9 @@ public class Particle implements Client {
     return lifespan <= initialLife / 2;
   }
 
+  /**
+   * @return the mass
+   */
   public short getMass() {
     return mass;
   }
@@ -105,32 +77,27 @@ public class Particle implements Client {
 
     Collision collision = CollisionUtils.particleCollision(this, other);
 
-    if (!collision.isColliding()) return;
+    if (!collision.colliding()) return;
 
-    float impulse = (2 * collision.getSpeed()) / (mass + other.mass);
+    float impulse = (2 * collision.speed()) / (mass + other.mass);
 
-    Vec2 normal = collision.getNormal();
+    Vec2 normal = collision.normal();
 
-    velocity.move(normal.multiplyScalar(other.mass * impulse));
-    other.velocity.move(normal.multiplyScalar(-mass * impulse));
+    velocity.add(new Vec2(normal).multiplyScalar(other.mass * impulse));
+    other.velocity.sub(normal.multiplyScalar(mass * impulse));
 
-    float drain = collision.getSpeed() / 500;
+    float drain = collision.speed() / 500;
 
     lifeDrain += drain;
     other.lifeDrain += drain;
   }
 
-  /**
-   * @param width The width of the simulation
-   * @param height The height of the simulation
-   * @param nearParticles This stream will be used in overriding classes
-   */
   public void update(
     short width,
     short height,
     Stream<Particle> nearParticles
   ) {
-    updateCalculations(width, height);
+    updateCalculations(width, height, nearParticles);
     updatePosition();
   }
 
@@ -207,15 +174,16 @@ public class Particle implements Client {
   }
 
   private void updatePosition() {
-    position.move(velocity.multiplyScalar(Settings.DT));
+    position.add(new Vec2(velocity).multiplyScalar(Settings.DT));
   }
 
   private void updateVelocity() {
-    velocity.addY(Settings.GRAVITY * Settings.DT);
+    velocity.add(0, Settings.GRAVITY * Settings.DT);
     updateColour();
   }
 
   private void updateColour() {
+    if (getClass() != Particle.class) return;
     colour =
       Color.getHSBColor(
         Math.min(330f / 360, velocity.getLength() / 800),
@@ -239,37 +207,22 @@ public class Particle implements Client {
     if (lifeDrain > 1) lifeDrain -= 0.1 * Settings.DT; else lifeDrain = 1;
   }
 
+  /**
+   * @param width The width of the simulation
+   * @param height The height of the simulation
+   * @param nearParticles This stream will be used in overriding classes
+   */
+  protected void updateCalculations(
+    short width,
+    short height,
+    Stream<Particle> nearParticles
+  ) {
+    updateCalculations(width, height);
+  }
+
   private void updateCalculations(short width, short height) {
     checkBoundaries(width, height);
     updateVelocity();
     updateStats();
-  }
-
-  @Override
-  public String toString() {
-    return (
-      getClass().getName() +
-      " [position=" +
-      position +
-      ", velocity=" +
-      velocity +
-      ", radius=" +
-      radius +
-      ", mass=" +
-      mass +
-      ", immortality=" +
-      immortality +
-      ", intangibility=" +
-      intangibility +
-      ", lifespan=" +
-      lifespan +
-      ", colour=" +
-      colour +
-      ", initialLife=" +
-      initialLife +
-      ", lifeDrain=" +
-      lifeDrain +
-      "]"
-    );
   }
 }

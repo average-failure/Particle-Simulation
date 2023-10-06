@@ -2,9 +2,9 @@ package simulation.util;
 
 import java.io.Serializable;
 
-public class Vec2 implements Serializable {
+public final class Vec2 implements Serializable {
 
-  private static final long serialVersionUID = 532529248923657L;
+  private static final long serialVersionUID = 532529248923658L;
 
   private float x;
   private float y;
@@ -19,11 +19,15 @@ public class Vec2 implements Serializable {
   }
 
   public Vec2 add(float x, float y) {
-    return new Vec2(this.x + x, this.y + y);
+    this.x += x;
+    this.y += y;
+    return this;
   }
 
   public Vec2 sub(float x, float y) {
-    return new Vec2(this.x - x, this.y - y);
+    this.x -= x;
+    this.y -= y;
+    return this;
   }
 
   public Vec2 add(Vec2 v) {
@@ -35,7 +39,9 @@ public class Vec2 implements Serializable {
   }
 
   public Vec2 multiply(float x, float y) {
-    return new Vec2(this.x * x, this.y * y);
+    this.x *= x;
+    this.y *= y;
+    return this;
   }
 
   public Vec2 multiply(Vec2 v) {
@@ -43,7 +49,9 @@ public class Vec2 implements Serializable {
   }
 
   public Vec2 divide(float x, float y) {
-    return new Vec2(this.x / x, this.y / y);
+    this.x /= x;
+    this.y /= y;
+    return this;
   }
 
   public Vec2 divide(Vec2 v) {
@@ -51,19 +59,27 @@ public class Vec2 implements Serializable {
   }
 
   public Vec2 multiplyScalar(float scalar) {
-    return new Vec2(x * scalar, y * scalar);
+    x *= scalar;
+    y *= scalar;
+    return this;
   }
 
   public Vec2 divideScalar(float scalar) {
-    return new Vec2(x / scalar, y / scalar);
+    x /= scalar;
+    y /= scalar;
+    return this;
   }
 
   public Vec2 addScalar(float scalar) {
-    return new Vec2(x + scalar, y + scalar);
+    x += scalar;
+    y += scalar;
+    return this;
   }
 
   public Vec2 subScalar(float scalar) {
-    return new Vec2(x - scalar, y - scalar);
+    x -= scalar;
+    y -= scalar;
+    return this;
   }
 
   public float getLength() {
@@ -83,10 +99,9 @@ public class Vec2 implements Serializable {
   }
 
   public Vec2 rotate(float angle) {
-    return new Vec2(
-      (float) (x * Math.cos(angle) - y * Math.sin(angle)),
-      (float) (x * Math.sin(angle) + y * Math.cos(angle))
-    );
+    x = (float) (x * Math.cos(angle) - y * Math.sin(angle));
+    y = (float) (x * Math.sin(angle) + y * Math.cos(angle));
+    return this;
   }
 
   /**
@@ -117,21 +132,8 @@ public class Vec2 implements Serializable {
     this.y = y;
   }
 
-  public void addX(float x) {
-    this.x += x;
-  }
-
-  public void addY(float y) {
-    this.y += y;
-  }
-
   @Override
   public String toString() {
     return getClass().getName() + " [x=" + x + ", y=" + y + "]";
-  }
-
-  public void move(Vec2 v) {
-    this.x += v.getX();
-    this.y += v.getY();
   }
 }
