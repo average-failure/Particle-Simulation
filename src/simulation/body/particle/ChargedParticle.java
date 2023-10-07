@@ -85,6 +85,8 @@ public class ChargedParticle extends Particle implements Gravity {
 
   @Override
   public short getNearRadius() {
-    return (short) (Settings.MAX_RADIUS + strength / 3);
+    return (short) (
+      Settings.get(Settings.Constants.MAX_RADIUS) + (float) strength / 3
+    );
   }
 }

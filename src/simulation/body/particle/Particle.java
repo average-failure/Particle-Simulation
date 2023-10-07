@@ -3,6 +3,7 @@ package simulation.body.particle;
 import java.awt.Color;
 import java.util.stream.Stream;
 import simulation.Settings;
+import simulation.Settings.Constants;
 import simulation.hash.Client;
 import simulation.util.MathUtils;
 import simulation.util.Vec2;
@@ -37,9 +38,9 @@ public class Particle implements Client {
     mass = p.mass();
     radius =
       (short) MathUtils.clamp(
-        (float) p.mass() / Settings.MASS_RADIUS_RATIO,
-        Settings.MIN_RADIUS,
-        Settings.MAX_RADIUS
+        p.mass() / Settings.get(Constants.MASS_RADIUS_RATIO),
+        Settings.get(Constants.MIN_RADIUS),
+        Settings.get(Constants.MAX_RADIUS)
       );
   }
 
@@ -152,33 +153,35 @@ public class Particle implements Client {
     final float vx = Math.abs(velocity.getX());
     final float vy = Math.abs(velocity.getY());
 
+    final float cor = Settings.get(Settings.COR);
+
     if ((diff = x - radius) < 0) {
       position.setX(radius);
-      velocity.setX(vx * Settings.COR + diff);
+      velocity.setX(vx * cor + diff);
       lifeDrain += 0.012 + (vx / 10000);
     } else if ((diff = x + radius) > width) {
       position.setX((float) width - radius);
-      velocity.setX(-vx * Settings.COR - (width - diff));
+      velocity.setX(-vx * cor - (width - diff));
       lifeDrain += 0.012 + (vx / 10000);
     }
 
     if ((diff = y - radius) < 0) {
       position.setY(radius);
-      velocity.setY(vy * Settings.COR + diff);
+      velocity.setY(vy * cor + diff);
       lifeDrain += 0.012 + (vy / 10000);
     } else if ((diff = y + radius) > height) {
       position.setY((float) height - radius);
-      velocity.setY(-vy * Settings.COR - (height - diff));
+      velocity.setY(-vy * cor - (height - diff));
       lifeDrain += 0.012 + (vy / 10000);
     }
   }
 
   private void updatePosition() {
-    position.add(new Vec2(velocity).multiplyScalar(Settings.DT));
+    position.add(new Vec2(velocity).multiplyScalar(Settings.get(Settings.DT)));
   }
 
   private void updateVelocity() {
-    velocity.add(0, Settings.GRAVITY * Settings.DT);
+    velocity.add(0, Settings.get(Settings.GRAVITY) * Settings.get(Settings.DT));
     updateColour();
   }
 
@@ -193,8 +196,10 @@ public class Particle implements Client {
   }
 
   private void updateStats() {
-    if (immortality > 0) immortality -= Settings.TIME_FACTOR;
-    if (!collisionEnabled()) intangibility -= Settings.TIME_FACTOR;
+    float time = Settings.get(Settings.TIME_FACTOR);
+    if (immortality > 0) immortality -= time;
+    if (!collisionEnabled()) intangibility -= time;
+    float dt = Settings.get(Settings.DT);
     if (lifespan > 0) {
       float drain = 0.1f;
 
@@ -202,9 +207,9 @@ public class Particle implements Client {
         drain = 0.3f;
       } else if (lifespan > initialLife * 0.75) drain = 0.2f;
 
-      lifespan -= Math.pow(lifespan, drain) * lifeDrain * Settings.DT;
+      lifespan -= Math.pow(lifespan, drain) * lifeDrain * dt;
     }
-    if (lifeDrain > 1) lifeDrain -= 0.1 * Settings.DT; else lifeDrain = 1;
+    if (lifeDrain > 1) lifeDrain -= 0.1 * dt; else lifeDrain = 1;
   }
 
   /**

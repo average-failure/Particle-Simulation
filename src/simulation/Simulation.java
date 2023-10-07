@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Stream;
+import simulation.Settings.Constants;
 import simulation.body.object.Environment;
 import simulation.body.particle.*;
 import simulation.hash.Client;
@@ -28,7 +29,7 @@ public class Simulation implements Serializable {
   private short height;
 
   public void start() {
-    for (short i = 0; i < Settings.INITIAL_PARTICLES; i++) {
+    for (short i = 0; i < Settings.get(Constants.INITIAL_PARTICLES); i++) {
       newParticle(
         new ParticleParams(
           MathUtils.randRange(width, 0),
@@ -54,7 +55,10 @@ public class Simulation implements Serializable {
     p.update(width, height, findNearParticles(p, p.getNearRadius()));
 
     if (p.collisionEnabled()) {
-      findNearParticles(p, (short) (p.getRadius() + Settings.MAX_RADIUS))
+      findNearParticles(
+        p,
+        (short) (p.getRadius() + Settings.get(Constants.MAX_RADIUS))
+      )
         .filter(Particle::collisionEnabled)
         .forEach(p::detectCollision);
     }
@@ -88,7 +92,7 @@ public class Simulation implements Serializable {
   private void splitParticle(ParticleParams p, Class<? extends Particle> type) {
     final float LOSS = 0.95f;
     final float THRESHOLD = (float) (
-      ((float) p.mass() / Settings.MASS_RADIUS_RATIO) * 0.75
+      (p.mass() / Settings.get(Constants.MASS_RADIUS_RATIO)) * 0.75
     );
 
     final ArrayList<Short> masses = new ArrayList<>();
@@ -96,9 +100,11 @@ public class Simulation implements Serializable {
     float r = p.mass() * LOSS;
 
     while (r > 0) {
-      if (r < Settings.MIN_MASS) break;
+      if (r < Settings.get(Constants.MIN_MASS)) break;
 
-      short s = (short) Math.floor(MathUtils.randRange(r, Settings.MIN_MASS));
+      short s = (short) Math.floor(
+        MathUtils.randRange(r, Settings.get(Constants.MIN_MASS))
+      );
       masses.add(MathUtils.randInt(masses.size()), s);
       r -= s;
     }
@@ -134,7 +140,7 @@ public class Simulation implements Serializable {
         initialLife
       );
 
-      if (mass / Settings.MASS_RADIUS_RATIO > THRESHOLD) {
+      if (mass / Settings.get(Constants.MASS_RADIUS_RATIO) > THRESHOLD) {
         splitParticle(newP, type);
       } else newParticle(newP, type);
     });
@@ -168,7 +174,7 @@ public class Simulation implements Serializable {
     particles.forEach(p -> {
       calculations(p);
       if (p.isDead()) {
-        if (p.getMass() > Settings.MIN_MASS * 2) {
+        if (p.getMass() > Settings.get(Constants.MIN_MASS) * 2) {
           split.add(p);
         } else delete.add(p);
       }

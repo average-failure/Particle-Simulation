@@ -1,26 +1,71 @@
 package simulation;
 
-public class Settings {
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
-  private Settings() {
-    throw new IllegalStateException("Utility class");
+public enum Settings {
+  TIME_FACTOR,
+  DT,
+  GRAVITY,
+  SOFTENING_CONSTANT,
+  COR,
+  ATTRACTION_STRENGTH,
+  REPULSION_STRENGTH;
+
+  public enum Constants {
+    MIN_RADIUS,
+    MAX_RADIUS,
+    CELL_SIZE,
+    MASS_RADIUS_RATIO,
+    MIN_MASS,
+    MAX_MASS,
+    INITIAL_PARTICLES,
   }
 
-  public static final byte MIN_RADIUS = 3;
-  public static final byte MAX_RADIUS = 10;
-  public static final byte CELL_SIZE = (MAX_RADIUS - MIN_RADIUS) / 2;
-  public static final byte MASS_RADIUS_RATIO = 10;
-  public static final short MIN_MASS = MIN_RADIUS * MASS_RADIUS_RATIO;
-  public static final short MAX_MASS = MAX_RADIUS * MASS_RADIUS_RATIO;
+  private static final Properties props = new Properties();
 
-  public static final short TIME_FACTOR = 100;
-  public static final float DT = (float) TIME_FACTOR / 1000;
-  public static final float GRAVITY = 9.8f;
-  public static final float SOFTENING_CONSTANT = 0.15f;
-  public static final float COR = 0.95f;
+  public static float get(Settings setting) {
+    return Float.parseFloat(props.getProperty(setting.name()));
+  }
 
-  public static final short ATTRACTION_STRENGTH = 50;
-  public static final short REPULSION_STRENGTH = 100;
+  public static float get(Constants constant) {
+    return Float.parseFloat(props.getProperty(constant.name()));
+  }
 
-  public static final short INITIAL_PARTICLES = 1000;
+  public static void put(Settings setting, float value) {
+    props.setProperty(setting.name(), Float.toString(value));
+  }
+
+  private static void put(Constants setting, float value) {
+    props.setProperty(setting.name(), Float.toString(value));
+  }
+
+  public static void load() {
+    try (
+      InputStream in = Settings.class.getResourceAsStream("config.properties")
+    ) {
+      if (in == null) throw new IllegalStateException(
+        "Cannot find config.properties"
+      );
+
+      props.load(in);
+
+      put(
+        Constants.CELL_SIZE,
+        (get(Constants.MAX_RADIUS) - get(Constants.MIN_RADIUS)) / 2
+      );
+      put(
+        Constants.MIN_MASS,
+        get(Constants.MIN_RADIUS) * get(Constants.MASS_RADIUS_RATIO)
+      );
+      put(
+        Constants.MAX_MASS,
+        get(Constants.MAX_RADIUS) * get(Constants.MASS_RADIUS_RATIO)
+      );
+      put(DT, get(TIME_FACTOR) / 1000);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 }

@@ -35,15 +35,15 @@ public final class GravityUtils {
     Vec2 dv = new Vec2(g1.getPosition()).sub(g2.getPosition());
     float dSq = dv.getLengthSq();
 
-    short strengthMultiplier = mode == Mode.ATTRACT
-      ? Settings.ATTRACTION_STRENGTH
-      : Settings.REPULSION_STRENGTH;
+    float strengthMultiplier = mode == Mode.ATTRACT
+      ? Settings.get(Settings.ATTRACTION_STRENGTH)
+      : Settings.get(Settings.REPULSION_STRENGTH);
 
     float force = (float) (
       g1.getStrength() *
       100 *
       strengthMultiplier /
-      (dSq * Math.sqrt(dSq + Settings.SOFTENING_CONSTANT))
+      (dSq * Math.sqrt(dSq + Settings.get(Settings.SOFTENING_CONSTANT)))
     );
 
     float acceleration = Math.min(
@@ -51,7 +51,7 @@ public final class GravityUtils {
       mode == Mode.ATTRACT ? 100 : 300
     );
 
-    return dv.multiplyScalar(acceleration * Settings.DT);
+    return dv.multiplyScalar(acceleration * Settings.get(Settings.DT));
   }
 
   private GravityUtils() {

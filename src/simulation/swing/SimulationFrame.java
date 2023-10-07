@@ -40,6 +40,8 @@ public final class SimulationFrame extends JFrame {
 
     addKeyListener(
       new KeyAdapter() {
+        private PausePanel pausePanel;
+
         @Override
         public void keyPressed(KeyEvent e) {
           switch (e.getKeyCode()) {
@@ -54,7 +56,15 @@ public final class SimulationFrame extends JFrame {
             case KeyEvent.VK_SPACE:
               if (simPanel.isRunning()) {
                 simPanel.pause();
-              } else simPanel.resume();
+                pausePanel =
+                  new PausePanel(Math.min(getWidth(), getHeight()) / 20);
+                JLayeredPane.putLayer(pausePanel, JLayeredPane.MODAL_LAYER);
+                pausePanel.setSize(getSize());
+                content.add(pausePanel);
+              } else {
+                simPanel.resume();
+                content.remove(pausePanel);
+              }
               break;
             default:
               break;

@@ -17,7 +17,7 @@ public final class CollisionUtils {
 
     Vec2 rv = new Vec2(p2.getVelocity()).sub(p1.getVelocity());
 
-    float speed = rv.dot(nv) * Settings.COR;
+    float speed = rv.dot(nv) * Settings.get(Settings.COR);
 
     if (speed <= 0) return new Collision();
 

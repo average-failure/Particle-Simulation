@@ -30,28 +30,27 @@ public final class SpatialHash implements Serializable {
 
   public Client[] findNear(Client client, short radius) {
     HashSet<Client> nearClients = new HashSet<>();
-    float hx = client.getX() / Settings.CELL_SIZE;
-    float hy = client.getY() / Settings.CELL_SIZE;
-    short cellRadius = (short) Math.ceil((float) radius / Settings.CELL_SIZE);
+    final float cellSize = Settings.get(Settings.Constants.CELL_SIZE);
+    final float hx = client.getX() / cellSize;
+    final float hy = client.getY() / cellSize;
+    final short cellRadius = (short) Math.ceil(radius / cellSize);
 
     for (
-      int cx = (int) Math.floor(hx) - cellRadius, mx = (int) Math.ceil(hx) +
-      cellRadius;
-      cx <= mx;
+      int cx = (int) Math.floor(hx) - cellRadius;
+      cx <= Math.ceil(hx) + cellRadius;
       cx++
     ) {
       for (
-        int cy = (int) Math.floor(hy) - cellRadius, my = (int) Math.ceil(hy) +
-        cellRadius;
-        cy <= my;
+        int cy = (int) Math.floor(hy) - cellRadius;
+        cy <= Math.ceil(hy) + cellRadius;
         cy++
       ) {
         grid.computeIfPresent(
           cx + "," + cy,
           (k, v) -> {
             for (Client c : v) {
-              float dx = c.getX() - client.getX();
-              float dy = c.getY() - client.getY();
+              final float dx = c.getX() - client.getX();
+              final float dy = c.getY() - client.getY();
               if (dx * dx + dy * dy <= radius * radius && c != client) {
                 nearClients.add(c);
               }
@@ -66,8 +65,9 @@ public final class SpatialHash implements Serializable {
   }
 
   private String[] getHashKey(Client client) {
-    float x = client.getX() / Settings.CELL_SIZE;
-    float y = client.getY() / Settings.CELL_SIZE;
+    final float cellSize = Settings.get(Settings.Constants.CELL_SIZE);
+    final float x = client.getX() / cellSize;
+    final float y = client.getY() / cellSize;
     return new String[] {
       ((short) Math.floor(x)) + "," + ((short) Math.floor(y)),
       ((short) Math.ceil(x)) + "," + ((short) Math.floor(y)),
