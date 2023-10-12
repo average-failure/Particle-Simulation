@@ -146,31 +146,55 @@ public class Simulation implements Serializable {
     });
   }
 
-  private void deleteParticle(Particle p) {
+  private Particle deleteParticle(Particle p) {
     hash.removeClient(p);
     particles.remove(p);
+    return p;
   }
 
-  public void newParticle(ParticleParams p, Class<? extends Particle> type) {
+  public Particle newParticle(
+    ParticleParams p,
+    Class<? extends Particle> type
+  ) {
     Particle newP = ClassConstructor.build(p, type);
-    if (newP == null) return;
     hash.newClient(newP);
     particles.add(newP);
+    return newP;
   }
 
-  public void newParticle(
+  public Particle newParticle(
     Vec2 position,
     Vec2 velocity,
     Class<? extends Particle> type
   ) {
-    newParticle(new ParticleParams(position, velocity), type);
+    return newParticle(new ParticleParams(position, velocity), type);
   }
 
-  public void newObject(ObjectParams pos, Class<? extends Environment> type) {
+  public Environment newObject(
+    ObjectParams pos,
+    Class<? extends Environment> type
+  ) {
     Environment newO = ClassConstructor.build(pos, type);
-    if (newO == null) return;
     hash.newClient(newO);
     objects.add(newO);
+    return newO;
+  }
+
+  public Environment deleteObject(float x, float y) {
+    for (Environment o : objects) {
+      if (o.getBounds().contains(x, y)) return deleteObject(o);
+    }
+    return null;
+  }
+
+  public Environment deleteObject(Vec2 position) {
+    return deleteObject(position.x(), position.y());
+  }
+
+  public Environment deleteObject(Environment o) {
+    hash.removeClient(o);
+    objects.remove(o);
+    return o;
   }
 
   private Stream<Particle> findNearParticles(Client c, short radius) {
@@ -240,7 +264,7 @@ public class Simulation implements Serializable {
     particles.forEach(p -> {
       final float xOffset = grabPos.x() - p.getX();
       final float yOffset = grabPos.y() - p.getY();
-      if (p.getBoundingBox().contains(grabPos.x(), grabPos.y())) {
+      if (p.getBounds().contains(grabPos.x(), grabPos.y())) {
         grabbed.add(new Grab(p, xOffset, yOffset));
         p.grab();
       }

@@ -38,8 +38,8 @@ public final class ClassConstructor {
         .newInstance(params);
     } catch (Exception e) {
       e.printStackTrace();
+      throw new IllegalStateException("Error creating particle");
     }
-    return null;
   }
 
   public static Environment build(
@@ -55,8 +55,8 @@ public final class ClassConstructor {
         .newInstance(params);
     } catch (Exception e) {
       e.printStackTrace();
+      throw new IllegalStateException("Error creating particle");
     }
-    return null;
   }
 
   public static List<Class<?>> getClassesInPackage(

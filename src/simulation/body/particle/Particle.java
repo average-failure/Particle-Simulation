@@ -26,13 +26,13 @@ public class Particle implements Client {
   private float lifeDrain = 1;
   private boolean grabbed = false;
 
-  protected final Ellipse2D.Float boundingBox;
+  protected final Ellipse2D.Float bounds;
 
   /**
-   * @return the boundingBox
+   * @return the bounds
    */
-  public Ellipse2D.Float getBoundingBox() {
-    return boundingBox;
+  public Ellipse2D.Float getBounds() {
+    return bounds;
   }
 
   public Particle(ParticleParams p) {
@@ -51,8 +51,7 @@ public class Particle implements Client {
         Settings.get(Constants.MAX_RADIUS)
       );
 
-    boundingBox =
-      new Ellipse2D.Float(position.x(), position.y(), radius, radius);
+    bounds = new Ellipse2D.Float(position.x(), position.y(), radius, radius);
   }
 
   /**
@@ -206,11 +205,11 @@ public class Particle implements Client {
 
   private void updatePosition() {
     position.add(new Vec2(velocity).mul(Settings.get(Settings.DT)));
-    boundingBox.setFrame(
+    bounds.setFrame(
       position.x() - radius,
       position.y() - radius,
-      radius * 2.0,
-      radius * 2.0
+      radius * 2f,
+      radius * 2f
     );
   }
 

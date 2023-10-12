@@ -62,6 +62,12 @@ class SimulationPanel extends JPanel {
     @Override
     public void mouseReleased(MouseEvent e) {
       pressed = PressType.NONE;
+
+      if (mouseMode == MouseMode.DELETE_OBJECT) {
+        simulation.deleteObject(mousePosition);
+        return;
+      }
+
       mousePosition.sub(initialMousePosition);
 
       switch (mouseMode) {
@@ -95,9 +101,6 @@ class SimulationPanel extends JPanel {
           break;
         case GRAB_PARTICLES:
           simulation.releaseGrab();
-          break;
-        case DELETE_OBJECT:
-          // TODO
           break;
         default:
           break;

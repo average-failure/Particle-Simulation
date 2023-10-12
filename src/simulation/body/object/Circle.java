@@ -2,6 +2,8 @@ package simulation.body.object;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.RectangularShape;
 import java.util.stream.Stream;
 import simulation.Settings;
 import simulation.body.particle.Particle;
@@ -12,9 +14,18 @@ public class Circle extends Solid {
 
   protected final short radius;
 
+  protected final Ellipse2D.Float bounds;
+
   public Circle(ObjectParams params) {
     super(params.position());
     radius = params.radius();
+    bounds =
+      new Ellipse2D.Float(
+        position.x() - radius,
+        position.y() - radius,
+        radius * 2f,
+        radius * 2f
+      );
   }
 
   @Override
@@ -67,5 +78,10 @@ public class Circle extends Solid {
     if (speed <= 0) return;
 
     p.getVelocity().sub(dv.mul(speed * 2));
+  }
+
+  @Override
+  public RectangularShape getBounds() {
+    return bounds;
   }
 }
