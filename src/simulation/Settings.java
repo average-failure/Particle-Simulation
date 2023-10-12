@@ -3,12 +3,12 @@ package simulation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import simulation.body.particle.*;
 
 public enum Settings {
-  TIME_FACTOR,
   DT,
   GRAVITY,
-  SOFTENING_CONSTANT,
+  AIR_DENSITY,
   COR,
   ATTRACTION_STRENGTH,
   REPULSION_STRENGTH;
@@ -20,8 +20,13 @@ public enum Settings {
     MASS_RADIUS_RATIO,
     MIN_MASS,
     MAX_MASS,
+    SOFTENING_CONSTANT,
+    AIR_CONSTANT,
     INITIAL_PARTICLES,
   }
+
+  public static final Class<? extends Particle> INITIAL_PARTICLE_TYPE =
+    Particle.class;
 
   private static final Properties props = new Properties();
 
@@ -63,7 +68,6 @@ public enum Settings {
         Constants.MAX_MASS,
         get(Constants.MAX_RADIUS) * get(Constants.MASS_RADIUS_RATIO)
       );
-      put(DT, get(TIME_FACTOR) / 1000);
     } catch (IOException e) {
       e.printStackTrace();
     }

@@ -1,25 +1,36 @@
 package simulation.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Insets;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLayeredPane;
+import javax.swing.KeyStroke;
 import javax.swing.WindowConstants;
+import simulation.Settings;
 
 public final class SimulationFrame extends JFrame {
 
   private final JLayeredPane content = new JLayeredPane();
+  private final SimulationPanel simPanel = new SimulationPanel();
 
   private boolean wasMaximised = false;
+
+  private static final String EXIT = "exit";
+  private static final String MIN_MAX = "minimise/maximise";
+  private static final String PAUSE_RESUME = "pause/resume";
 
   public SimulationFrame() {
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -27,65 +38,73 @@ public final class SimulationFrame extends JFrame {
     setLayout(new BorderLayout());
     setContentPane(content);
 
-    final SimulationPanel simPanel = new SimulationPanel();
     final Dimension size = Toolkit.getDefaultToolkit().getScreenSize();
     size.setSize(size.width * 0.8, size.height * 0.8);
-    simPanel.resizeSimulation(size);
-    content.setLayout(new BorderLayout());
-    JLayeredPane.putLayer(simPanel, JLayeredPane.DEFAULT_LAYER);
-    content.add(simPanel, BorderLayout.CENTER);
     content.setPreferredSize(size);
+
+    simPanel.resizeSimulation();
+
+    content.setLayout(new BorderLayout());
+    content.add(simPanel, BorderLayout.CENTER);
+
+    final SidePanel sliderPanel = new SidePanel(
+      SidePanel.Side.RIGHT,
+      this::addSliders
+    );
+    content.add(sliderPanel, BorderLayout.EAST);
+
+    final BottomPanel configPanel = new BottomPanel(simPanel);
+    content.add(configPanel, BorderLayout.SOUTH);
+
     minimise();
     simPanel.start();
 
-    addKeyListener(
-      new KeyAdapter() {
-        private PausePanel pausePanel;
+    getAllComponents(this)
+      .forEach(c -> {
+        for (int condition : new int[] {
+          JComponent.WHEN_IN_FOCUSED_WINDOW,
+          JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT,
+          JComponent.WHEN_FOCUSED,
+        }) c
+          .getInputMap(condition)
+          .put(KeyStroke.getKeyStroke("SPACE"), "none");
+      });
 
-        @Override
-        public void keyPressed(KeyEvent e) {
-          switch (e.getKeyCode()) {
-            case KeyEvent.VK_ESCAPE:
-              System.exit(0);
-              break;
-            case KeyEvent.VK_F11:
-              if (isMaximized(true)) {
-                minimise();
-              } else maximise();
-              break;
-            case KeyEvent.VK_SPACE:
-              if (simPanel.isRunning()) {
-                simPanel.pause();
-                pausePanel =
-                  new PausePanel(Math.min(getWidth(), getHeight()) / 20);
-                JLayeredPane.putLayer(pausePanel, JLayeredPane.MODAL_LAYER);
-                pausePanel.setSize(getSize());
-                content.add(pausePanel);
-              } else {
-                simPanel.resume();
-                content.remove(pausePanel);
-              }
-              break;
-            default:
-              break;
+    putInput("ESCAPE", EXIT);
+    putAction(EXIT, () -> System.exit(0));
+
+    putInput("SPACE", PAUSE_RESUME);
+    content
+      .getActionMap()
+      .put(
+        PAUSE_RESUME,
+        new AbstractAction() {
+          private PausePanel pausePanel;
+
+          @Override
+          public void actionPerformed(ActionEvent e) {
+            if (simPanel.isRunning()) {
+              simPanel.pause();
+              pausePanel =
+                new PausePanel(Math.min(getWidth(), getHeight()) / 20);
+              JLayeredPane.putLayer(pausePanel, JLayeredPane.MODAL_LAYER);
+              pausePanel.setSize(getSize());
+              content.add(pausePanel);
+            } else {
+              simPanel.resume();
+              content.remove(pausePanel);
+            }
           }
         }
-      }
-    );
+      );
 
-    addMouseListener(
-      new MouseAdapter() {
-        @Override
-        public void mousePressed(MouseEvent e) {
-          int x = e.getX();
-          int y = e.getY();
-          final Insets insets = getInsets();
-          if (insets != null) {
-            x -= insets.left;
-            y -= insets.top;
-          }
-          simPanel.newParticle(x, y);
-        }
+    putInput("F11", MIN_MAX);
+    putAction(
+      MIN_MAX,
+      () -> {
+        if (isMaximized(true)) {
+          minimise();
+        } else maximise();
       }
     );
 
@@ -93,12 +112,69 @@ public final class SimulationFrame extends JFrame {
       new ComponentAdapter() {
         @Override
         public void componentResized(ComponentEvent e) {
-          Dimension innerSize = getInnerSize();
-          simPanel.resizeSimulation(innerSize);
-          if (!isMaximized(false)) content.setPreferredSize(innerSize);
+          simPanel.resizeSimulation();
+          if (!isMaximized(false)) content.setPreferredSize(getInnerSize());
         }
       }
     );
+  }
+
+  private List<JComponent> getAllComponents(Container c) {
+    Component[] comps = c.getComponents();
+    List<JComponent> compList = new ArrayList<>();
+    for (Component comp : comps) {
+      if (!(comp instanceof JComponent)) continue;
+
+      compList.add((JComponent) comp);
+      compList.addAll(getAllComponents((Container) comp));
+    }
+    return compList;
+  }
+
+  private void putInput(String keyString, String actionMapKey) {
+    content
+      .getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+      .put(KeyStroke.getKeyStroke(keyString), actionMapKey);
+  }
+
+  private void putAction(String key, Runnable action) {
+    content
+      .getActionMap()
+      .put(
+        key,
+        new AbstractAction() {
+          @Override
+          public void actionPerformed(ActionEvent e) {
+            action.run();
+          }
+        }
+      );
+  }
+
+  private void addSliders(Container panel) {
+    for (Settings setting : Settings.values()) {
+      final StringBuilder sb = new StringBuilder();
+      for (String name : setting.name().split("_")) {
+        sb.append(
+          name.substring(0, 1).toUpperCase(Locale.ROOT) +
+          name.substring(1).toLowerCase(Locale.ROOT) +
+          " "
+        );
+      }
+      final float value = Settings.get(setting) * 1000;
+      panel.add(
+        new Slider(
+          sb.toString().trim(),
+          Math.round(value / 5),
+          Math.round(value * 5),
+          (int) value
+        )
+      );
+    }
+  }
+
+  void resizeSimulation() {
+    simPanel.resizeSimulation();
   }
 
   private boolean isMaximized(boolean isDecorated) {

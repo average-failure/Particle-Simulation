@@ -43,7 +43,7 @@ public final class ClassConstructor {
   }
 
   public static Environment build(
-    EnvironmentParams params,
+    ObjectParams params,
     Class<? extends Environment> type
   ) {
     try {
@@ -51,7 +51,7 @@ public final class ClassConstructor {
         type != null
           ? type
           : OBJECT_CLASSES.get(RANDOM.nextInt(NUM_OBJECT_TYPES))
-      ).getConstructor(EnvironmentParams.class)
+      ).getConstructor(ObjectParams.class)
         .newInstance(params);
     } catch (Exception e) {
       e.printStackTrace();
@@ -59,7 +59,7 @@ public final class ClassConstructor {
     return null;
   }
 
-  private static List<Class<?>> getClassesInPackage(
+  public static List<Class<?>> getClassesInPackage(
     String packageName,
     Class<?> type
   ) {

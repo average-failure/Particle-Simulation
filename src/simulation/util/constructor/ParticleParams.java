@@ -15,9 +15,13 @@ public final record ParticleParams(
   ChargedParticle.Charge charge
 ) {
   public ParticleParams(float x, float y) {
+    this(new Vec2(x, y), new Vec2(0, 0));
+  }
+
+  public ParticleParams(Vec2 position, Vec2 velocity) {
     this(
-      new Vec2(x, y),
-      new Vec2(0, 0),
+      position,
+      velocity,
       (short) MathUtils.randRange(
         Settings.get(Settings.Constants.MAX_MASS),
         Settings.get(Settings.Constants.MIN_MASS)
@@ -61,10 +65,14 @@ public final record ParticleParams(
       ChargedParticle.Charge.random()
     );
   }
+
   /**
    * Charged particle constructor
    */
-  // Canonical constructor
+  public ParticleParams {
+    position = new Vec2(position);
+    velocity = new Vec2(velocity);
+  }
 
   public ParticleParams withStrength(short strength) {
     return new ParticleParams(

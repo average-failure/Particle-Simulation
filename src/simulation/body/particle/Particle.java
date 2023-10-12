@@ -1,14 +1,13 @@
 package simulation.body.particle;
 
 import java.awt.Color;
+import java.awt.geom.Ellipse2D;
 import java.util.stream.Stream;
 import simulation.Settings;
 import simulation.Settings.Constants;
 import simulation.hash.Client;
 import simulation.util.MathUtils;
 import simulation.util.Vec2;
-import simulation.util.collision.Collision;
-import simulation.util.collision.CollisionUtils;
 import simulation.util.constructor.ParticleParams;
 
 public class Particle implements Client {
@@ -20,18 +19,27 @@ public class Particle implements Client {
   protected final short radius;
   protected final short mass;
   private short immortality;
-  private byte intangibility;
+  private byte intangibility = 0;
   private float lifespan;
   protected Color colour;
   private final float initialLife;
   private float lifeDrain = 1;
+  private boolean grabbed = false;
+
+  protected final Ellipse2D.Float boundingBox;
+
+  /**
+   * @return the boundingBox
+   */
+  public Ellipse2D.Float getBoundingBox() {
+    return boundingBox;
+  }
 
   public Particle(ParticleParams p) {
     position = new Vec2(p.position());
     velocity = new Vec2(p.velocity());
 
     immortality = p.immortality();
-    intangibility = 0;
     initialLife = p.initialLife();
     lifespan = p.initialLife();
 
@@ -42,6 +50,9 @@ public class Particle implements Client {
         Settings.get(Constants.MIN_RADIUS),
         Settings.get(Constants.MAX_RADIUS)
       );
+
+    boundingBox =
+      new Ellipse2D.Float(position.x(), position.y(), radius, radius);
   }
 
   /**
@@ -74,22 +85,30 @@ public class Particle implements Client {
   }
 
   public void detectCollision(Particle other) {
-    if (!collisionEnabled() || !other.collisionEnabled()) return;
+    if (
+      !collisionEnabled() || !other.collisionEnabled() || other.grabbed
+    ) return;
 
-    Collision collision = CollisionUtils.particleCollision(this, other);
+    final Vec2 dv = new Vec2(position).sub(other.getPosition());
 
-    if (!collision.colliding()) return;
+    if (dv.getLength() > radius + other.getRadius()) return;
 
-    float impulse = (2 * collision.speed()) / (mass + other.mass);
+    final Vec2 rv = new Vec2(other.getVelocity()).sub(velocity);
 
-    Vec2 normal = collision.normal();
+    final float speed = rv.dot(dv.normalise()) * Settings.get(Settings.COR);
 
-    velocity.add(new Vec2(normal).multiplyScalar(other.mass * impulse));
-    other.velocity.sub(normal.multiplyScalar(mass * impulse));
+    if (speed <= 0) return;
 
-    float drain = collision.speed() / 500;
+    if (!grabbed) {
+      final float impulse = (2 * speed) / (mass + other.mass);
 
-    lifeDrain += drain;
+      velocity.add(new Vec2(dv).mul(other.mass * impulse));
+      other.velocity.sub(dv.mul(mass * impulse));
+    } else other.getVelocity().sub(dv.mul(speed * 2));
+
+    final float drain = speed / 500;
+
+    if (!grabbed) lifeDrain += drain;
     other.lifeDrain += drain;
   }
 
@@ -132,26 +151,35 @@ public class Particle implements Client {
 
   @Override
   public float getX() {
-    return position.getX();
+    return position.x();
   }
 
   @Override
   public float getY() {
-    return position.getY();
+    return position.y();
   }
 
   public short getNearRadius() {
     return 0;
   }
 
+  public void grab() {
+    grabbed = true;
+    velocity.set(0, 0);
+  }
+
+  public void release() {
+    grabbed = false;
+  }
+
   private void checkBoundaries(short width, short height) {
     float diff;
 
-    final float x = position.getX();
-    final float y = position.getY();
+    final float x = position.x();
+    final float y = position.y();
 
-    final float vx = Math.abs(velocity.getX());
-    final float vy = Math.abs(velocity.getY());
+    final float vx = Math.abs(velocity.x());
+    final float vy = Math.abs(velocity.y());
 
     final float cor = Settings.get(Settings.COR);
 
@@ -177,11 +205,33 @@ public class Particle implements Client {
   }
 
   private void updatePosition() {
-    position.add(new Vec2(velocity).multiplyScalar(Settings.get(Settings.DT)));
+    position.add(new Vec2(velocity).mul(Settings.get(Settings.DT)));
+    boundingBox.setFrame(
+      position.x() - radius,
+      position.y() - radius,
+      radius * 2.0,
+      radius * 2.0
+    );
   }
 
   private void updateVelocity() {
-    velocity.add(0, Settings.get(Settings.GRAVITY) * Settings.get(Settings.DT));
+    final float dt = Settings.get(Settings.DT);
+    // Gravity
+    velocity.add(0, Settings.get(Settings.GRAVITY) * dt);
+
+    // Air resistance
+    velocity.sub(
+      new Vec2(velocity)
+        .square()
+        .mul(
+          (float) Math.PI *
+          ((radius * radius) / 50_000f) *
+          Settings.get(Constants.AIR_CONSTANT) *
+          Settings.get(Settings.AIR_DENSITY) *
+          dt
+        )
+    );
+
     updateColour();
   }
 
@@ -196,11 +246,12 @@ public class Particle implements Client {
   }
 
   private void updateStats() {
-    float time = Settings.get(Settings.TIME_FACTOR);
+    final float time = Settings.get(Settings.DT) * 100;
     if (immortality > 0) immortality -= time;
-    if (!collisionEnabled()) intangibility -= time;
-    float dt = Settings.get(Settings.DT);
-    if (lifespan > 0) {
+    if (intangibility > 0) intangibility -= time;
+
+    final float dt = Settings.get(Settings.DT);
+    if (lifespan > 0 && !grabbed) {
       float drain = 0.1f;
 
       if (lifespan > 50_000) {

@@ -1,5 +1,6 @@
 package simulation.body.object;
 
+import java.awt.Graphics;
 import java.util.stream.Stream;
 import simulation.body.particle.Particle;
 import simulation.hash.Client;
@@ -7,29 +8,17 @@ import simulation.util.Vec2;
 
 public abstract class Environment implements Client {
 
-  private final Vec2 position;
+  protected final Vec2 position;
 
-  protected Environment(float x, float y) {
-    this.position = new Vec2(x, y);
+  protected Environment(Vec2 position) {
+    this.position = new Vec2(position);
   }
 
-  public abstract Client getCenter();
-
-  /**
-   * @return the x
-   */
-  public float getX() {
-    return position.getX();
-  }
-
-  /**
-   * @return the y
-   */
-  public float getY() {
-    return position.getY();
-  }
+  public abstract Vec2 getCenter();
 
   public abstract short getNearRadius();
 
   public abstract void update(Stream<Particle> nearParticles);
+
+  public abstract void draw(Graphics g);
 }

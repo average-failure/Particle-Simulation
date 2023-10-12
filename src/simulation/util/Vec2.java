@@ -1,13 +1,18 @@
 package simulation.util;
 
 import java.io.Serializable;
+import simulation.hash.Client;
 
 public final class Vec2 implements Serializable {
 
-  private static final long serialVersionUID = 532529248923658L;
+  private static final long serialVersionUID = 532529248923659L;
 
   private float x;
   private float y;
+
+  public Vec2() {
+    this(0, 0);
+  }
 
   public Vec2(float x, float y) {
     this.x = x;
@@ -16,6 +21,16 @@ public final class Vec2 implements Serializable {
 
   public Vec2(Vec2 v) {
     this(v.x, v.y);
+  }
+
+  public Vec2 set(float x, float y) {
+    this.x = x;
+    this.y = y;
+    return this;
+  }
+
+  public Vec2 set(Vec2 v) {
+    return set(v.x, v.y);
   }
 
   public Vec2 add(float x, float y) {
@@ -31,54 +46,80 @@ public final class Vec2 implements Serializable {
   }
 
   public Vec2 add(Vec2 v) {
-    return add(v.getX(), v.getY());
+    return add(v.x, v.y);
   }
 
   public Vec2 sub(Vec2 v) {
-    return sub(v.getX(), v.getY());
+    return sub(v.x, v.y);
   }
 
-  public Vec2 multiply(float x, float y) {
+  public Vec2 mul(float x, float y) {
     this.x *= x;
     this.y *= y;
     return this;
   }
 
-  public Vec2 multiply(Vec2 v) {
-    return multiply(v.getX(), v.getY());
+  public Vec2 mul(Vec2 v) {
+    return mul(v.x, v.y);
   }
 
-  public Vec2 divide(float x, float y) {
+  public Vec2 div(float x, float y) {
     this.x /= x;
     this.y /= y;
     return this;
   }
 
-  public Vec2 divide(Vec2 v) {
-    return divide(v.getX(), v.getY());
+  public Vec2 div(Vec2 v) {
+    return div(v.x, v.y);
   }
 
-  public Vec2 multiplyScalar(float scalar) {
+  public Vec2 pow(float x, float y) {
+    this.x = (float) Math.pow(this.x, x);
+    this.y = (float) Math.pow(this.y, y);
+    return this;
+  }
+
+  public Vec2 pow(Vec2 v) {
+    return pow(v.x, v.y);
+  }
+
+  public Vec2 mul(float scalar) {
     x *= scalar;
     y *= scalar;
     return this;
   }
 
-  public Vec2 divideScalar(float scalar) {
+  public Vec2 div(float scalar) {
     x /= scalar;
     y /= scalar;
     return this;
   }
 
-  public Vec2 addScalar(float scalar) {
+  public Vec2 add(float scalar) {
     x += scalar;
     y += scalar;
     return this;
   }
 
-  public Vec2 subScalar(float scalar) {
+  public Vec2 sub(float scalar) {
     x -= scalar;
     y -= scalar;
+    return this;
+  }
+
+  public Vec2 pow(float scalar) {
+    x = (float) Math.pow(x, scalar);
+    y = (float) Math.pow(y, scalar);
+    return this;
+  }
+
+  /**
+   * Squares the vector while keeping the direction
+   * @return the vector
+   */
+  public Vec2 square() {
+    x *= x * Math.signum(x);
+    y *= y * Math.signum(y);
     return this;
   }
 
@@ -91,11 +132,19 @@ public final class Vec2 implements Serializable {
   }
 
   public Vec2 getNormal() {
-    return divideScalar(getLength());
+    final float length = getLength();
+    if (length <= 0) return new Vec2(0, 0);
+    return new Vec2(this).div(length);
+  }
+
+  public Vec2 normalise() {
+    final float length = getLength();
+    if (length <= 0) return set(0, 0);
+    return div(length);
   }
 
   public float dot(Vec2 v) {
-    return x * v.getX() + y * v.getY();
+    return x * v.x + y * v.y;
   }
 
   public Vec2 rotate(float angle) {
@@ -104,17 +153,23 @@ public final class Vec2 implements Serializable {
     return this;
   }
 
+  public Vec2 subScalarIgnoreSign(float scalar) {
+    x -= scalar * Math.signum(x);
+    y -= scalar * Math.signum(y);
+    return this;
+  }
+
   /**
    * @return the x
    */
-  public float getX() {
+  public float x() {
     return x;
   }
 
   /**
    * @return the y
    */
-  public float getY() {
+  public float y() {
     return y;
   }
 
@@ -135,5 +190,10 @@ public final class Vec2 implements Serializable {
   @Override
   public String toString() {
     return getClass().getName() + " [x=" + x + ", y=" + y + "]";
+  }
+
+  public boolean isSamePos(Client c) {
+    if (c == null) return false;
+    return x == c.getX() && y == c.getY();
   }
 }

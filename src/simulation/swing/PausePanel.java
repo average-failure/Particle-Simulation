@@ -8,7 +8,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-public class PausePanel extends JPanel {
+class PausePanel extends JPanel {
 
   public PausePanel(int fontSize) {
     setLayout(new GridLayout(2, 1));

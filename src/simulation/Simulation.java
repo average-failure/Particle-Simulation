@@ -4,17 +4,17 @@ import java.awt.Graphics;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import simulation.Settings.Constants;
-import simulation.body.object.Environment;
+import simulation.body.object.*;
 import simulation.body.particle.*;
 import simulation.hash.Client;
 import simulation.hash.SpatialHash;
 import simulation.util.MathUtils;
 import simulation.util.Vec2;
-import simulation.util.constructor.ClassConstructor;
-import simulation.util.constructor.ParticleParams;
+import simulation.util.constructor.*;
 
 public class Simulation implements Serializable {
 
@@ -22,8 +22,8 @@ public class Simulation implements Serializable {
 
   private final SpatialHash hash = new SpatialHash();
 
-  private final HashSet<Particle> particles = new HashSet<>();
-  private final HashSet<Environment> objects = new HashSet<>();
+  private final Set<Particle> particles = ConcurrentHashMap.newKeySet();
+  private final Set<Environment> objects = ConcurrentHashMap.newKeySet();
 
   private short width;
   private short height;
@@ -35,7 +35,7 @@ public class Simulation implements Serializable {
           MathUtils.randRange(width, 0),
           MathUtils.randRange(height, 0)
         ),
-        Particle.class
+        Settings.INITIAL_PARTICLE_TYPE
       );
     }
   }
@@ -112,10 +112,10 @@ public class Simulation implements Serializable {
     final int parts = masses.size();
     final float initialLife = (p.initialLife() * LOSS) / parts;
 
-    final float x = p.position().getX();
-    final float y = p.position().getY();
+    final float x = p.position().x();
+    final float y = p.position().y();
 
-    final Vec2 velocity = p.velocity().multiplyScalar(LOSS);
+    final Vec2 velocity = p.velocity().mul(LOSS);
 
     masses.forEach(mass -> {
       float angle = 0;
@@ -153,15 +153,31 @@ public class Simulation implements Serializable {
 
   public void newParticle(ParticleParams p, Class<? extends Particle> type) {
     Particle newP = ClassConstructor.build(p, type);
+    if (newP == null) return;
     hash.newClient(newP);
     particles.add(newP);
   }
 
-  public void newParticle(float x, float y) {
-    newParticle(new ParticleParams(x, y), null);
+  public void newParticle(
+    Vec2 position,
+    Vec2 velocity,
+    Class<? extends Particle> type
+  ) {
+    newParticle(new ParticleParams(position, velocity), type);
+  }
+
+  public void newObject(ObjectParams pos, Class<? extends Environment> type) {
+    Environment newO = ClassConstructor.build(pos, type);
+    if (newO == null) return;
+    hash.newClient(newO);
+    objects.add(newO);
   }
 
   private Stream<Particle> findNearParticles(Client c, short radius) {
+    return findNearParticles(new Vec2(c.getX(), c.getY()), radius);
+  }
+
+  private Stream<Particle> findNearParticles(Vec2 c, short radius) {
     return Arrays
       .stream(hash.findNear(c, radius))
       .filter(Particle.class::isInstance)
@@ -169,8 +185,8 @@ public class Simulation implements Serializable {
   }
 
   public void update() {
-    ArrayList<Particle> split = new ArrayList<>();
-    ArrayList<Particle> delete = new ArrayList<>();
+    final ArrayList<Particle> split = new ArrayList<>();
+    final ArrayList<Particle> delete = new ArrayList<>();
     particles.forEach(p -> {
       calculations(p);
       if (p.isDead()) {
@@ -183,12 +199,25 @@ public class Simulation implements Serializable {
     delete.forEach(this::deleteParticle);
 
     objects.forEach(this::envCalculations);
+
+    updateGrab();
+  }
+
+  private void updateGrab() {
+    if (grabbed.isEmpty()) return;
+
+    grabbed.forEach(g -> {
+      g.particle
+        .getPosition()
+        .set(grabPos.x() - g.xOffset, grabPos.y() - g.yOffset);
+      g.particle.getVelocity().div(1.1f);
+    });
   }
 
   public void draw(Graphics g) {
     particles.forEach(p -> {
       g.setColor(p.getColour());
-      short radius = p.getRadius();
+      final short radius = p.getRadius();
       g.fillOval(
         Math.round(p.getX()) - radius,
         Math.round(p.getY()) - radius,
@@ -196,5 +225,44 @@ public class Simulation implements Serializable {
         radius * 2
       );
     });
+    objects.forEach(o -> o.draw(g));
+  }
+
+  private final record Grab(Particle particle, float xOffset, float yOffset) {}
+
+  private final ArrayList<Grab> grabbed = new ArrayList<>();
+  private Vec2 preGrabPos;
+  private Vec2 grabPos;
+
+  public void grab(Vec2 position) {
+    preGrabPos = new Vec2(position);
+    grabPos = new Vec2(position);
+    particles.forEach(p -> {
+      final float xOffset = grabPos.x() - p.getX();
+      final float yOffset = grabPos.y() - p.getY();
+      if (p.getBoundingBox().contains(grabPos.x(), grabPos.y())) {
+        grabbed.add(new Grab(p, xOffset, yOffset));
+        p.grab();
+      }
+    });
+  }
+
+  public void moveGrab(Vec2 position) {
+    if (grabbed.isEmpty()) return;
+
+    preGrabPos.set(grabPos);
+    grabPos.set(position).sub(preGrabPos);
+    grabbed.forEach(g -> g.particle.getVelocity().add(grabPos));
+    grabPos.set(position);
+  }
+
+  public void releaseGrab() {
+    preGrabPos = null;
+    grabPos = null;
+
+    if (grabbed.isEmpty()) return;
+
+    grabbed.forEach(g -> g.particle.release());
+    grabbed.clear();
   }
 }

@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import simulation.Settings;
+import simulation.util.Vec2;
 
 public final class SpatialHash implements Serializable {
 
@@ -28,11 +29,13 @@ public final class SpatialHash implements Serializable {
     cleanGrid();
   }
 
-  public Client[] findNear(Client client, short radius) {
-    HashSet<Client> nearClients = new HashSet<>();
+  public Client[] findNear(Vec2 client, short radius) {
+    if (client == null) return new Client[0];
+
+    final HashSet<Client> nearClients = new HashSet<>();
     final float cellSize = Settings.get(Settings.Constants.CELL_SIZE);
-    final float hx = client.getX() / cellSize;
-    final float hy = client.getY() / cellSize;
+    final float hx = client.x() / cellSize;
+    final float hy = client.y() / cellSize;
     final short cellRadius = (short) Math.ceil(radius / cellSize);
 
     for (
@@ -49,9 +52,11 @@ public final class SpatialHash implements Serializable {
           cx + "," + cy,
           (k, v) -> {
             for (Client c : v) {
-              final float dx = c.getX() - client.getX();
-              final float dy = c.getY() - client.getY();
-              if (dx * dx + dy * dy <= radius * radius && c != client) {
+              final float dx = c.getX() - client.x();
+              final float dy = c.getY() - client.y();
+              if (
+                dx * dx + dy * dy <= radius * radius && !client.isSamePos(c)
+              ) {
                 nearClients.add(c);
               }
             }
@@ -62,6 +67,10 @@ public final class SpatialHash implements Serializable {
     }
 
     return nearClients.toArray(new Client[0]);
+  }
+
+  public Client[] findNear(Client client, short radius) {
+    return findNear(new Vec2(client.getX(), client.getY()), radius);
   }
 
   private String[] getHashKey(Client client) {
