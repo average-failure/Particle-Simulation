@@ -45,15 +45,18 @@ public final class SimulationFrame extends JFrame {
     simPanel.resizeSimulation();
 
     content.setLayout(new BorderLayout());
+    content.setLayer(content, JLayeredPane.DEFAULT_LAYER);
     content.add(simPanel, BorderLayout.CENTER);
 
     final SidePanel sliderPanel = new SidePanel(
       SidePanel.Side.RIGHT,
       this::addSliders
     );
+    content.setLayer(sliderPanel, JLayeredPane.PALETTE_LAYER);
     content.add(sliderPanel, BorderLayout.EAST);
 
     final BottomPanel configPanel = new BottomPanel(simPanel);
+    content.setLayer(configPanel, JLayeredPane.PALETTE_LAYER);
     content.add(configPanel, BorderLayout.SOUTH);
 
     minimise();
@@ -87,12 +90,11 @@ public final class SimulationFrame extends JFrame {
               simPanel.pause();
               pausePanel =
                 new PausePanel(Math.min(getWidth(), getHeight()) / 20);
-              JLayeredPane.putLayer(pausePanel, JLayeredPane.MODAL_LAYER);
-              pausePanel.setSize(getSize());
-              content.add(pausePanel);
+              simPanel.add(pausePanel, BorderLayout.CENTER);
+              simPanel.revalidate();
             } else {
               simPanel.resume();
-              content.remove(pausePanel);
+              simPanel.remove(pausePanel);
             }
           }
         }

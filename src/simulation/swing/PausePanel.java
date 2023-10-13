@@ -14,14 +14,15 @@ class PausePanel extends JPanel {
     setLayout(new GridLayout(2, 1));
     setBackground(new Color(100, 100, 100, 100));
     setOpaque(false);
+    setFont(new Font("Gill Sans", Font.BOLD, fontSize));
     final JLabel label1 = new JLabel("Simulation Paused");
-    label1.setFont(new Font("Gill Sans", Font.BOLD, fontSize * 2));
+    label1.setFont(getFont().deriveFont(getFont().getSize2D() * 2));
     label1.setHorizontalAlignment(SwingConstants.CENTER);
     label1.setVerticalAlignment(SwingConstants.BOTTOM);
     label1.setForeground(Color.LIGHT_GRAY);
     add(label1);
     final JLabel label2 = new JLabel("Press space to resume...");
-    label2.setFont(new Font("Gill Sans", Font.BOLD, fontSize));
+    label2.setFont(getFont());
     label2.setHorizontalAlignment(SwingConstants.CENTER);
     label2.setVerticalAlignment(SwingConstants.TOP);
     label2.setForeground(Color.LIGHT_GRAY);

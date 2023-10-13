@@ -1,5 +1,6 @@
 package simulation.swing;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.event.MouseEvent;
@@ -206,6 +207,7 @@ class SimulationPanel extends JPanel {
 
   public SimulationPanel() {
     setBackground(Color.BLACK);
+    setLayout(new BorderLayout());
 
     simulation = new Simulation();
     timer =
@@ -216,10 +218,10 @@ class SimulationPanel extends JPanel {
           repaint();
         }
       );
-
     final CustomMouseListener listener = new CustomMouseListener();
 
     addMouseListener(listener);
+
     addMouseMotionListener(listener);
   }
 
