@@ -73,12 +73,16 @@ class SimulationPanel extends JPanel {
 
       switch (mouseMode) {
         case NEW_PARTICLE:
-          newParticle(initialMousePosition, mousePosition, getParticleType());
+          simulation.newParticle(
+            initialMousePosition,
+            mousePosition,
+            getParticleType()
+          );
           break;
         case NEW_OBJECT:
           switch (objectType) {
             case RECTANGLE:
-              newObject(
+              simulation.newObject(
                 new ObjectParams(
                   initialMousePosition,
                   (short) Math.round(mousePosition.x()),
@@ -88,7 +92,7 @@ class SimulationPanel extends JPanel {
               );
               break;
             case CIRCLE:
-              newObject(
+              simulation.newObject(
                 new ObjectParams(
                   initialMousePosition,
                   (short) Math.round(mousePosition.getLength())
@@ -205,9 +209,14 @@ class SimulationPanel extends JPanel {
   private ParticleType particleType = ParticleType.PARTICLE;
   private ObjectType objectType = ObjectType.RECTANGLE;
 
+  private final PausePanel pausePanel;
+
   public SimulationPanel() {
+    super(true);
     setBackground(Color.BLACK);
     setLayout(new BorderLayout());
+    pausePanel = new PausePanel();
+    add(pausePanel, BorderLayout.CENTER);
 
     simulation = new Simulation();
     timer =
@@ -218,10 +227,9 @@ class SimulationPanel extends JPanel {
           repaint();
         }
       );
+
     final CustomMouseListener listener = new CustomMouseListener();
-
     addMouseListener(listener);
-
     addMouseMotionListener(listener);
   }
 
@@ -258,33 +266,19 @@ class SimulationPanel extends JPanel {
     final int height = getHeight();
     if (width == 0 || height == 0) return;
     simulation.resize((short) width, (short) height);
+    pausePanel.resizeFont(Math.min(width, height) / 20);
   }
 
   public void resume() {
     if (timer.isRunning()) return;
     timer.start();
+    pausePanel.setVisible(false);
   }
 
   public void pause() {
     if (!timer.isRunning()) return;
     timer.stop();
-  }
-
-  public void newParticle(
-    Vec2 position,
-    Vec2 velocity,
-    Class<? extends Particle> type
-  ) {
-    if (!timer.isRunning()) return;
-    simulation.newParticle(position, velocity, type);
-  }
-
-  public void newObject(
-    ObjectParams params,
-    Class<? extends Environment> type
-  ) {
-    if (!timer.isRunning()) return;
-    simulation.newObject(params, type);
+    pausePanel.setVisible(true);
   }
 
   @Override

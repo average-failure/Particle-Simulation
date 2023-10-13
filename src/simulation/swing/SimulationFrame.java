@@ -77,28 +77,12 @@ public final class SimulationFrame extends JFrame {
     putAction(EXIT, () -> System.exit(0));
 
     putInput("SPACE", PAUSE_RESUME);
-    content
-      .getActionMap()
-      .put(
-        PAUSE_RESUME,
-        new AbstractAction() {
-          private PausePanel pausePanel;
-
-          @Override
-          public void actionPerformed(ActionEvent e) {
-            if (simPanel.isRunning()) {
-              simPanel.pause();
-              pausePanel =
-                new PausePanel(Math.min(getWidth(), getHeight()) / 20);
-              simPanel.add(pausePanel, BorderLayout.CENTER);
-              simPanel.revalidate();
-            } else {
-              simPanel.resume();
-              simPanel.remove(pausePanel);
-            }
-          }
-        }
-      );
+    putAction(
+      PAUSE_RESUME,
+      () -> {
+        if (simPanel.isRunning()) simPanel.pause(); else simPanel.resume();
+      }
+    );
 
     putInput("F11", MIN_MAX);
     putAction(
