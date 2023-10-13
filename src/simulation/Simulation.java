@@ -234,7 +234,7 @@ public class Simulation implements Serializable {
       g.particle
         .getPosition()
         .set(grabPos.x() - g.xOffset, grabPos.y() - g.yOffset);
-      g.particle.getVelocity().div(1.1f);
+      g.particle.getVelocity().pow(0.95f);
     });
   }
 

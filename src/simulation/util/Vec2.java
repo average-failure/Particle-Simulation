@@ -108,8 +108,8 @@ public final class Vec2 implements Serializable {
   }
 
   public Vec2 pow(float scalar) {
-    x = (float) Math.pow(x, scalar);
-    y = (float) Math.pow(y, scalar);
+    x = (float) Math.pow(Math.abs(x), scalar) * Math.signum(x);
+    y = (float) Math.pow(Math.abs(y), scalar) * Math.signum(y);
     return this;
   }
 
@@ -157,6 +157,12 @@ public final class Vec2 implements Serializable {
     x -= scalar * Math.signum(x);
     y -= scalar * Math.signum(y);
     return this;
+  }
+
+  public static Vec2 setAdd(Vec2 set, Vec2... add) {
+    final Vec2 newVec = new Vec2(add[0]);
+    for (int i = 1; i < add.length; i++) newVec.add(add[i]);
+    return set.set(newVec);
   }
 
   /**

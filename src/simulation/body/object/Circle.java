@@ -17,7 +17,7 @@ public class Circle extends Solid {
   protected final Ellipse2D.Float bounds;
 
   public Circle(ObjectParams params) {
-    super(params.position());
+    super(params.position(), 0, 0);
     radius = params.radius();
     bounds =
       new Ellipse2D.Float(
@@ -36,11 +36,6 @@ public class Circle extends Solid {
   @Override
   public float getY() {
     return position.y();
-  }
-
-  @Override
-  public Vec2 getCenter() {
-    return position;
   }
 
   @Override
@@ -68,16 +63,29 @@ public class Circle extends Solid {
   protected void detectCollision(Particle p) {
     if (!p.collisionEnabled()) return;
 
-    final Vec2 dv = new Vec2(position).sub(p.getPosition());
+    final Vec2 pPos = p.getPosition();
+    final Vec2 dv = new Vec2(position).sub(pPos);
+    final int r = radius + p.getRadius();
 
-    if (dv.getLength() > radius + p.getRadius()) return;
+    if (dv.getLength() > r) return;
+
+    final double angle = Math.atan2(-dv.y(), -dv.x());
+    final Vec2 distance = new Vec2(
+      (float) Math.cos(angle),
+      (float) Math.sin(angle)
+    )
+      .mul(r);
+    pPos.set(position.x() + distance.x(), position.y() + distance.y());
+
+    final Vec2 pVelocity = p.getVelocity();
+    pVelocity.add(distance.add(dv));
 
     final float speed =
-      p.getVelocity().dot(dv.normalise()) * Settings.get(Settings.COR);
+      pVelocity.dot(dv.normalise()) * Settings.get(Settings.COR);
 
     if (speed <= 0) return;
 
-    p.getVelocity().sub(dv.mul(speed * 2));
+    pVelocity.sub(dv.mul(speed * 2));
   }
 
   @Override

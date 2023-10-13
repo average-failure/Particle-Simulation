@@ -7,29 +7,21 @@ import java.awt.geom.RectangularShape;
 import java.util.stream.Stream;
 import simulation.Settings;
 import simulation.body.particle.Particle;
-import simulation.util.Vec2;
 import simulation.util.constructor.ObjectParams;
 
 public class Rectangle extends Solid {
 
   protected final short width;
   protected final short height;
-  protected final Vec2 center;
 
   protected final Rectangle2D.Float bounds;
 
   public Rectangle(ObjectParams params) {
-    super(params.position());
+    super(params.position(), params.width() / 2f, params.height() / 2f);
     width = params.width();
     height = params.height();
-    center = new Vec2(position.x() + width / 2f, position.y() + height / 2f);
 
     bounds = new Rectangle2D.Float(position.x(), position.y(), width, height);
-  }
-
-  @Override
-  public Vec2 getCenter() {
-    return center;
   }
 
   @Override

@@ -10,14 +10,23 @@ import simulation.util.Vec2;
 public abstract class Environment implements Client {
 
   protected final Vec2 position;
+  protected final Vec2 center;
 
-  protected Environment(Vec2 position) {
+  /**
+   * @param position the position of the object
+   * @param cx the x offset from the position to the center of the object
+   * @param cy the y offset from the position to the center of the object
+   */
+  protected Environment(Vec2 position, float cx, float cy) {
     this.position = new Vec2(position);
+    center = new Vec2(position).add(cx, cy);
   }
 
   public abstract RectangularShape getBounds();
 
-  public abstract Vec2 getCenter();
+  public final Vec2 getCenter() {
+    return center;
+  }
 
   public abstract short getNearRadius();
 
