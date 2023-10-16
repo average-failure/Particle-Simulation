@@ -2,6 +2,7 @@ package simulation.swing;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.util.Locale;
@@ -173,7 +174,8 @@ class SimulationPanel extends JPanel {
     PARTICLE,
     ATTRACTOR_PARTICLE,
     REPULSER_PARTICLE,
-    CHARGED_PARTICLE;
+    CHARGED_PARTICLE,
+    COPY_PARTICLE;
 
     public static ParticleType valueOfStr(String type) {
       try {
@@ -267,6 +269,7 @@ class SimulationPanel extends JPanel {
     if (width == 0 || height == 0) return;
     simulation.resize((short) width, (short) height);
     pausePanel.resizeFont(Math.min(width, height) / 20);
+    setFont(new Font("Gill Sans", Font.BOLD, Math.min(width, height) / 40));
   }
 
   public void resume() {
@@ -286,6 +289,13 @@ class SimulationPanel extends JPanel {
     super.paintComponent(g);
     simulation.draw(g);
     if (pressed != PressType.NONE) drawOverlay(g);
+    g.setColor(Color.LIGHT_GRAY);
+    g.setFont(getFont());
+    g.drawString(
+      "Particles: " + simulation.getNumParticles(),
+      10,
+      g.getFontMetrics().getHeight()
+    );
   }
 
   private void drawOverlay(Graphics g) {

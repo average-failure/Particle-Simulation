@@ -38,6 +38,7 @@ public class Particle implements Client {
   public Particle(ParticleParams p) {
     position = new Vec2(p.position());
     velocity = new Vec2(p.velocity());
+    updateColour();
 
     immortality = p.immortality();
     initialLife = p.initialLife();
@@ -83,20 +84,20 @@ public class Particle implements Client {
     return mass;
   }
 
-  public void detectCollision(Particle other) {
+  public boolean detectCollision(Particle other) {
     if (
       !collisionEnabled() || !other.collisionEnabled() || other.grabbed
-    ) return;
+    ) return false;
 
     final Vec2 dv = new Vec2(position).sub(other.getPosition());
 
-    if (dv.getLength() > radius + other.getRadius()) return;
+    if (dv.getLength() > radius + other.getRadius()) return false;
 
     final Vec2 rv = new Vec2(other.getVelocity()).sub(velocity);
 
     final float speed = rv.dot(dv.normalise()) * Settings.get(Settings.COR);
 
-    if (speed <= 0) return;
+    if (speed <= 0) return false;
 
     if (!grabbed) {
       final float impulse = (2 * speed) / (mass + other.mass);
@@ -109,6 +110,8 @@ public class Particle implements Client {
 
     if (!grabbed) lifeDrain += drain;
     other.lifeDrain += drain;
+
+    return true;
   }
 
   public void update(

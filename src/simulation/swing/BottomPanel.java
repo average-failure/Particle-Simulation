@@ -53,6 +53,7 @@ public class BottomPanel extends JPanel {
             "Attractor Particle",
             "Repulser Particle",
             "Charged Particle",
+            "Copy Particle",
           },
           simPanel::setParticleType
         )

@@ -45,6 +45,10 @@ public class Simulation implements Serializable {
     this.height = height;
   }
 
+  public int getNumParticles() {
+    return particles.size();
+  }
+
   private void envCalculations(Environment o) {
     o.update(findNearParticles(o.getCenter(), o.getNearRadius()));
   }
