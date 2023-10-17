@@ -1,6 +1,6 @@
 package simulation;
 
-import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,15 +18,36 @@ import simulation.util.constructor.*;
 
 public class Simulation implements Serializable {
 
+  private class Flag {
+
+    private boolean value = false;
+
+    public boolean getValue() {
+      return value;
+    }
+
+    public void setValue(boolean value) {
+      this.value = value;
+    }
+  }
+
+  private final record Grab(Particle particle, float xOffset, float yOffset) {}
+
   private static final long serialVersionUID = 148627507412075L;
 
   private final SpatialHash hash = new SpatialHash();
-
   private final Set<Particle> particles = ConcurrentHashMap.newKeySet();
-  private final Set<Environment> objects = ConcurrentHashMap.newKeySet();
 
+  private final Set<Environment> objects = ConcurrentHashMap.newKeySet();
   private short width;
+
   private short height;
+
+  private final ArrayList<Grab> grabbed = new ArrayList<>();
+
+  private Vec2 preGrabPos;
+
+  private Vec2 grabPos;
 
   public void start() {
     for (short i = 0; i < Settings.get(Constants.INITIAL_PARTICLES); i++) {
@@ -49,14 +70,132 @@ public class Simulation implements Serializable {
     return particles.size();
   }
 
+  public int getNumObjects() {
+    return objects.size();
+  }
+
+  public Particle newParticle(
+    ParticleParams p,
+    Class<? extends Particle> type
+  ) {
+    Particle newP = ClassConstructor.build(p, type);
+    hash.newClient(newP);
+    particles.add(newP);
+    return newP;
+  }
+
+  public Particle newParticle(
+    Vec2 position,
+    Vec2 velocity,
+    Class<? extends Particle> type
+  ) {
+    return newParticle(new ParticleParams(position, velocity), type);
+  }
+
+  public Environment newObject(ObjectParams params) {
+    Environment newO = ClassConstructor.build(params);
+    hash.newClient(newO);
+    objects.add(newO);
+    return newO;
+  }
+
+  public Environment deleteObject(float x, float y) {
+    for (Environment o : objects) {
+      if (o.getBounds().contains(x, y)) return deleteObject(o);
+    }
+    return null;
+  }
+
+  public Environment deleteObject(Vec2 position) {
+    return deleteObject(position.x(), position.y());
+  }
+
+  public Environment deleteObject(Environment o) {
+    hash.removeClient(o);
+    objects.remove(o);
+    return o;
+  }
+
+  public void update() {
+    final ArrayList<Particle> split = new ArrayList<>();
+    final ArrayList<Particle> delete = new ArrayList<>();
+    particles.forEach(p -> {
+      calculations(p);
+      if (p.isDead()) {
+        if (p.getMass() > Settings.get(Constants.MIN_MASS) * 2) {
+          split.add(p);
+        } else delete.add(p);
+      }
+    });
+    split.forEach(this::splitParticle);
+    delete.forEach(this::deleteParticle);
+
+    objects.forEach(this::envCalculations);
+
+    updateGrab();
+  }
+
+  public void draw(Graphics2D g) {
+    g.setColor(Environment.COLOUR);
+    objects.forEach(o -> o.draw(g));
+
+    particles.forEach(p -> {
+      g.setColor(p.getColour());
+      g.fill(p.getBounds());
+    });
+  }
+
+  public void grab(Vec2 position) {
+    preGrabPos = new Vec2(position);
+    grabPos = new Vec2(position);
+    particles.forEach(p -> {
+      final float xOffset = grabPos.x() - p.getX();
+      final float yOffset = grabPos.y() - p.getY();
+      if (p.getBounds().contains(grabPos.x(), grabPos.y())) {
+        grabbed.add(new Grab(p, xOffset, yOffset));
+        p.grab();
+      }
+    });
+  }
+
+  public void moveGrab(Vec2 position) {
+    if (grabbed.isEmpty()) return;
+
+    preGrabPos.set(grabPos);
+    grabPos.set(position).sub(preGrabPos);
+    grabbed.forEach(g -> g.particle.getVelocity().add(grabPos));
+    grabPos.set(position);
+  }
+
+  public void releaseGrab() {
+    preGrabPos = null;
+    grabPos = null;
+
+    if (grabbed.isEmpty()) return;
+
+    grabbed.forEach(g -> g.particle.release());
+    grabbed.clear();
+  }
+
   private void envCalculations(Environment o) {
-    o.update(findNearParticles(o.getCenter(), o.getNearRadius()));
+    final Stream<Particle> near = findNearParticles(
+      o.getCenter(),
+      o.getNearRadius()
+    );
+
+    if (o instanceof Splat) {
+      if (((Splat) o).updateSplat(near)) deleteObject(o);
+    } else o.update(near);
   }
 
   private void calculations(Particle p) {
     hash.removeClient(p);
 
-    p.update(width, height, findNearParticles(p, p.getNearRadius()));
+    final Flag delete = new Flag();
+
+    if (p.getClass() == SplatParticle.class) {
+      if (((SplatParticle) p).updateSplat(width, height)) delete.setValue(true);
+    } else p.update(width, height, findNearParticles(p, p.getNearRadius()));
 
     if (p.collisionEnabled()) {
       findNearParticles(
@@ -64,10 +203,14 @@ public class Simulation implements Serializable {
         (short) (p.getRadius() + Settings.get(Constants.MAX_RADIUS))
       )
         .filter(Particle::collisionEnabled)
-        .forEach(p::detectCollision);
+        .forEach(p2 -> {
+          if (p.detectCollision(p2) && p instanceof SplatParticle) {
+            delete.setValue(true);
+          }
+        });
     }
 
-    hash.newClient(p);
+    if (delete.getValue()) deleteParticle(p); else hash.newClient(p);
   }
 
   private void splitParticle(Particle p) {
@@ -153,52 +296,18 @@ public class Simulation implements Serializable {
   private Particle deleteParticle(Particle p) {
     hash.removeClient(p);
     particles.remove(p);
-    return p;
-  }
 
-  public Particle newParticle(
-    ParticleParams p,
-    Class<? extends Particle> type
-  ) {
-    Particle newP = ClassConstructor.build(p, type);
-    hash.newClient(newP);
-    particles.add(newP);
-    return newP;
-  }
-
-  public Particle newParticle(
-    Vec2 position,
-    Vec2 velocity,
-    Class<? extends Particle> type
-  ) {
-    return newParticle(new ParticleParams(position, velocity), type);
-  }
-
-  public Environment newObject(
-    ObjectParams pos,
-    Class<? extends Environment> type
-  ) {
-    Environment newO = ClassConstructor.build(pos, type);
-    hash.newClient(newO);
-    objects.add(newO);
-    return newO;
-  }
-
-  public Environment deleteObject(float x, float y) {
-    for (Environment o : objects) {
-      if (o.getBounds().contains(x, y)) return deleteObject(o);
+    if (p.getClass() == SplatParticle.class) {
+      newObject(
+        new ObjectParams(
+          p.getPosition(),
+          (short) (p.getRadius() * 10),
+          p.getColour()
+        )
+      );
     }
-    return null;
-  }
 
-  public Environment deleteObject(Vec2 position) {
-    return deleteObject(position.x(), position.y());
-  }
-
-  public Environment deleteObject(Environment o) {
-    hash.removeClient(o);
-    objects.remove(o);
-    return o;
+    return p;
   }
 
   private Stream<Particle> findNearParticles(Client c, short radius) {
@@ -212,25 +321,6 @@ public class Simulation implements Serializable {
       .map(c2 -> (Particle) c2);
   }
 
-  public void update() {
-    final ArrayList<Particle> split = new ArrayList<>();
-    final ArrayList<Particle> delete = new ArrayList<>();
-    particles.forEach(p -> {
-      calculations(p);
-      if (p.isDead()) {
-        if (p.getMass() > Settings.get(Constants.MIN_MASS) * 2) {
-          split.add(p);
-        } else delete.add(p);
-      }
-    });
-    split.forEach(this::splitParticle);
-    delete.forEach(this::deleteParticle);
-
-    objects.forEach(this::envCalculations);
-
-    updateGrab();
-  }
-
   private void updateGrab() {
     if (grabbed.isEmpty()) return;
 
@@ -240,57 +330,5 @@ public class Simulation implements Serializable {
         .set(grabPos.x() - g.xOffset, grabPos.y() - g.yOffset);
       g.particle.getVelocity().pow(0.95f);
     });
-  }
-
-  public void draw(Graphics g) {
-    particles.forEach(p -> {
-      g.setColor(p.getColour());
-      final short radius = p.getRadius();
-      g.fillOval(
-        Math.round(p.getX()) - radius,
-        Math.round(p.getY()) - radius,
-        radius * 2,
-        radius * 2
-      );
-    });
-    objects.forEach(o -> o.draw(g));
-  }
-
-  private final record Grab(Particle particle, float xOffset, float yOffset) {}
-
-  private final ArrayList<Grab> grabbed = new ArrayList<>();
-  private Vec2 preGrabPos;
-  private Vec2 grabPos;
-
-  public void grab(Vec2 position) {
-    preGrabPos = new Vec2(position);
-    grabPos = new Vec2(position);
-    particles.forEach(p -> {
-      final float xOffset = grabPos.x() - p.getX();
-      final float yOffset = grabPos.y() - p.getY();
-      if (p.getBounds().contains(grabPos.x(), grabPos.y())) {
-        grabbed.add(new Grab(p, xOffset, yOffset));
-        p.grab();
-      }
-    });
-  }
-
-  public void moveGrab(Vec2 position) {
-    if (grabbed.isEmpty()) return;
-
-    preGrabPos.set(grabPos);
-    grabPos.set(position).sub(preGrabPos);
-    grabbed.forEach(g -> g.particle.getVelocity().add(grabPos));
-    grabPos.set(position);
-  }
-
-  public void releaseGrab() {
-    preGrabPos = null;
-    grabPos = null;
-
-    if (grabbed.isEmpty()) return;
-
-    grabbed.forEach(g -> g.particle.release());
-    grabbed.clear();
   }
 }

@@ -1,7 +1,5 @@
 package simulation.body.object;
 
-import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RectangularShape;
 import java.util.stream.Stream;
@@ -9,7 +7,7 @@ import simulation.Settings;
 import simulation.body.particle.Particle;
 import simulation.util.constructor.ObjectParams;
 
-public class Rectangle extends Solid {
+public class Rectangle extends Environment implements Solid {
 
   protected final short width;
   protected final short height;
@@ -48,18 +46,7 @@ public class Rectangle extends Solid {
   }
 
   @Override
-  public void draw(Graphics g) {
-    g.setColor(Color.LIGHT_GRAY);
-    g.fillRect(
-      Math.round(position.x()),
-      Math.round(position.y()),
-      width,
-      height
-    );
-  }
-
-  @Override
-  protected void detectCollision(Particle p) {
+  public void detectCollision(Particle p) {
     final float cor = Settings.get(Settings.COR);
 
     final float dx = p.getX() - getX();

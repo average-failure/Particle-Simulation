@@ -100,16 +100,4 @@ public final class SpatialHash implements Serializable {
 
     preCleanTime = System.currentTimeMillis();
   }
-
-  @Override
-  public String toString() {
-    return (
-      getClass().getName() +
-      " [grid=" +
-      grid +
-      ", preCleanTime=" +
-      preCleanTime +
-      "]"
-    );
-  }
 }

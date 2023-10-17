@@ -4,26 +4,75 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.util.Locale;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import javax.swing.event.MouseInputAdapter;
 import simulation.Simulation;
-import simulation.body.object.*;
 import simulation.body.particle.Particle;
 import simulation.util.Vec2;
 import simulation.util.constructor.ObjectParams;
 
 class SimulationPanel extends JPanel {
 
-  private static final long serialVersionUID = 343208457896132L;
+  enum MouseMode {
+    NEW_PARTICLE,
+    NEW_OBJECT,
+    GRAB_PARTICLES,
+    DELETE_OBJECT;
 
-  private final Timer timer;
-  private final Simulation simulation;
+    public static MouseMode valueOfStr(String mode) {
+      try {
+        return valueOf(mode.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        System.out.println("Invalid mode: " + mode);
+        return null;
+      } catch (NullPointerException e) {
+        System.out.println(NO_NULLS);
+        return null;
+      }
+    }
+  }
 
-  private final Vec2 initialMousePosition = new Vec2();
-  private final Vec2 mousePosition = new Vec2();
+  enum ParticleType {
+    PARTICLE,
+    ATTRACTOR_PARTICLE,
+    REPULSER_PARTICLE,
+    CHARGED_PARTICLE,
+    COPY_PARTICLE,
+    SPLAT_PARTICLE;
+
+    public static ParticleType valueOfStr(String type) {
+      try {
+        return valueOf(type.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        System.out.println("Invalid type: " + type);
+        return null;
+      } catch (NullPointerException e) {
+        System.out.println(NO_NULLS);
+        return null;
+      }
+    }
+  }
+
+  enum ObjectType {
+    RECTANGLE,
+    CIRCLE;
+
+    public static ObjectType valueOfStr(String type) {
+      try {
+        return valueOf(type.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        System.out.println("Invalid type: " + type);
+        return null;
+      } catch (NullPointerException e) {
+        System.out.println(NO_NULLS);
+        return null;
+      }
+    }
+  }
 
   private enum PressType {
     NONE,
@@ -33,8 +82,6 @@ class SimulationPanel extends JPanel {
     GRAB_PARTICLES,
     DELETE_OBJECT,
   }
-
-  private PressType pressed = PressType.NONE;
 
   private final class CustomMouseListener extends MouseInputAdapter {
 
@@ -88,8 +135,7 @@ class SimulationPanel extends JPanel {
                   initialMousePosition,
                   (short) Math.round(mousePosition.x()),
                   (short) Math.round(mousePosition.y())
-                ),
-                Rectangle.class
+                )
               );
               break;
             case CIRCLE:
@@ -97,8 +143,7 @@ class SimulationPanel extends JPanel {
                 new ObjectParams(
                   initialMousePosition,
                   (short) Math.round(mousePosition.getLength())
-                ),
-                Circle.class
+                )
               );
               break;
             default:
@@ -149,63 +194,19 @@ class SimulationPanel extends JPanel {
     }
   }
 
+  private static final long serialVersionUID = 343208457896132L;
+
   private static final String NO_NULLS = "NO NULLS ALLOWED!";
 
-  enum MouseMode {
-    NEW_PARTICLE,
-    NEW_OBJECT,
-    GRAB_PARTICLES,
-    DELETE_OBJECT;
+  private final Timer timer;
 
-    public static MouseMode valueOfStr(String mode) {
-      try {
-        return valueOf(mode.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-        System.out.println("Invalid mode: " + mode);
-        return null;
-      } catch (NullPointerException e) {
-        System.out.println(NO_NULLS);
-        return null;
-      }
-    }
-  }
+  private final Simulation simulation;
 
-  enum ParticleType {
-    PARTICLE,
-    ATTRACTOR_PARTICLE,
-    REPULSER_PARTICLE,
-    CHARGED_PARTICLE,
-    COPY_PARTICLE;
+  private final Vec2 initialMousePosition = new Vec2();
 
-    public static ParticleType valueOfStr(String type) {
-      try {
-        return valueOf(type.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-        System.out.println("Invalid type: " + type);
-        return null;
-      } catch (NullPointerException e) {
-        System.out.println(NO_NULLS);
-        return null;
-      }
-    }
-  }
+  private final Vec2 mousePosition = new Vec2();
 
-  enum ObjectType {
-    RECTANGLE,
-    CIRCLE;
-
-    public static ObjectType valueOfStr(String type) {
-      try {
-        return valueOf(type.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-        System.out.println("Invalid type: " + type);
-        return null;
-      } catch (NullPointerException e) {
-        System.out.println(NO_NULLS);
-        return null;
-      }
-    }
-  }
+  private PressType pressed = PressType.NONE;
 
   private MouseMode mouseMode = MouseMode.NEW_PARTICLE;
   private ParticleType particleType = ParticleType.PARTICLE;
@@ -287,7 +288,7 @@ class SimulationPanel extends JPanel {
   @Override
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
-    simulation.draw(g);
+    simulation.draw((Graphics2D) g);
     if (pressed != PressType.NONE) drawOverlay(g);
     g.setColor(Color.LIGHT_GRAY);
     g.setFont(getFont());
@@ -295,6 +296,11 @@ class SimulationPanel extends JPanel {
       "Particles: " + simulation.getNumParticles(),
       10,
       g.getFontMetrics().getHeight()
+    );
+    g.drawString(
+      "Objects: " + simulation.getNumObjects(),
+      10,
+      g.getFontMetrics().getHeight() * 2
     );
   }
 

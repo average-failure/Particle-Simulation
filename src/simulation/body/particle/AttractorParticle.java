@@ -23,6 +23,13 @@ public class AttractorParticle extends Particle implements Gravity {
   }
 
   @Override
+  public short getNearRadius() {
+    return (short) (
+      Settings.get(Settings.Constants.MAX_RADIUS) + (float) strength / 5
+    );
+  }
+
+  @Override
   protected void updateCalculations(
     short width,
     short height,
@@ -31,12 +38,5 @@ public class AttractorParticle extends Particle implements Gravity {
     super.updateCalculations(width, height, nearParticles);
 
     nearParticles.forEach(p -> GravityUtils.attract(this, p));
-  }
-
-  @Override
-  public short getNearRadius() {
-    return (short) (
-      Settings.get(Settings.Constants.MAX_RADIUS) + (float) strength / 5
-    );
   }
 }

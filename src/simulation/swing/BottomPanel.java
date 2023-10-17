@@ -54,6 +54,7 @@ public class BottomPanel extends JPanel {
             "Repulser Particle",
             "Charged Particle",
             "Copy Particle",
+            "Splat Particle",
           },
           simPanel::setParticleType
         )

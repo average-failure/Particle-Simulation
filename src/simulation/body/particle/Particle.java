@@ -18,22 +18,15 @@ public class Particle implements Client {
   protected final Vec2 velocity;
   protected final short radius;
   protected final short mass;
-  private short immortality;
-  private byte intangibility = 0;
-  private float lifespan;
+  protected short immortality;
+  protected byte intangibility = 0;
+  protected float lifespan;
   protected Color colour;
-  private final float initialLife;
-  private float lifeDrain = 1;
-  private boolean grabbed = false;
+  protected final float initialLife;
+  protected float lifeDrain = 1;
+  protected boolean grabbed = false;
 
   protected final Ellipse2D.Float bounds;
-
-  /**
-   * @return the bounds
-   */
-  public Ellipse2D.Float getBounds() {
-    return bounds;
-  }
 
   public Particle(ParticleParams p) {
     position = new Vec2(p.position());
@@ -53,6 +46,13 @@ public class Particle implements Client {
       );
 
     bounds = new Ellipse2D.Float(position.x(), position.y(), radius, radius);
+  }
+
+  /**
+   * @return the bounds
+   */
+  public Ellipse2D.Float getBounds() {
+    return bounds;
   }
 
   /**
@@ -174,8 +174,9 @@ public class Particle implements Client {
     grabbed = false;
   }
 
-  private void checkBoundaries(short width, short height) {
+  protected boolean checkBoundaries(short width, short height) {
     float diff;
+    boolean collided = false;
 
     final float x = position.x();
     final float y = position.y();
@@ -189,24 +190,30 @@ public class Particle implements Client {
       position.setX(radius);
       velocity.setX(vx * cor + diff);
       lifeDrain += 0.012 + (vx / 10000);
+      collided = true;
     } else if ((diff = x + radius) > width) {
       position.setX((float) width - radius);
       velocity.setX(-vx * cor - (width - diff));
       lifeDrain += 0.012 + (vx / 10000);
+      collided = true;
     }
 
     if ((diff = y - radius) < 0) {
       position.setY(radius);
       velocity.setY(vy * cor + diff);
       lifeDrain += 0.012 + (vy / 10000);
+      collided = true;
     } else if ((diff = y + radius) > height) {
       position.setY((float) height - radius);
       velocity.setY(-vy * cor - (height - diff));
       lifeDrain += 0.012 + (vy / 10000);
+      collided = true;
     }
+
+    return collided;
   }
 
-  private void updatePosition() {
+  protected final void updatePosition() {
     position.add(new Vec2(velocity).mul(Settings.get(Settings.DT)));
     bounds.setFrame(
       position.x() - radius,
@@ -216,7 +223,7 @@ public class Particle implements Client {
     );
   }
 
-  private void updateVelocity() {
+  protected final void updateVelocity() {
     final float dt = Settings.get(Settings.DT);
     // Gravity
     velocity.add(0, Settings.get(Settings.GRAVITY) * dt);
@@ -237,17 +244,7 @@ public class Particle implements Client {
     updateColour();
   }
 
-  private void updateColour() {
-    if (getClass() != Particle.class) return;
-    colour =
-      Color.getHSBColor(
-        Math.min(330f / 360, velocity.getLength() / 800),
-        0.9f,
-        0.75f
-      );
-  }
-
-  private void updateStats() {
+  protected void updateStats() {
     final float time = Settings.get(Settings.DT) * 100;
     if (immortality > 0) immortality -= time;
     if (intangibility > 0) intangibility -= time;
@@ -276,6 +273,16 @@ public class Particle implements Client {
     Stream<Particle> nearParticles
   ) {
     updateCalculations(width, height);
+  }
+
+  private void updateColour() {
+    if (getClass() != Particle.class) return;
+    colour =
+      Color.getHSBColor(
+        Math.min(330f / 360, velocity.getLength() / 800),
+        0.9f,
+        0.75f
+      );
   }
 
   private void updateCalculations(short width, short height) {

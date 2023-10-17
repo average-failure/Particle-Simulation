@@ -39,11 +39,6 @@ class Slider extends JPanel {
       }
 
       @Override
-      protected Dimension getThumbSize() {
-        return new Dimension(14, 14);
-      }
-
-      @Override
       public void paintThumb(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(
@@ -86,6 +81,11 @@ class Slider extends JPanel {
             1
           );
         }
+      }
+
+      @Override
+      protected Dimension getThumbSize() {
+        return new Dimension(14, 14);
       }
     }
 

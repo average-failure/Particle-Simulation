@@ -1,7 +1,5 @@
 package simulation.body.object;
 
-import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RectangularShape;
 import java.util.stream.Stream;
@@ -10,7 +8,7 @@ import simulation.body.particle.Particle;
 import simulation.util.Vec2;
 import simulation.util.constructor.ObjectParams;
 
-public class Circle extends Solid {
+public class Circle extends Environment implements Solid {
 
   protected final short radius;
 
@@ -49,18 +47,7 @@ public class Circle extends Solid {
   }
 
   @Override
-  public void draw(Graphics g) {
-    g.setColor(Color.LIGHT_GRAY);
-    g.fillOval(
-      Math.round(position.x() - radius),
-      Math.round(position.y() - radius),
-      radius * 2,
-      radius * 2
-    );
-  }
-
-  @Override
-  protected void detectCollision(Particle p) {
+  public void detectCollision(Particle p) {
     if (!p.collisionEnabled()) return;
 
     final Vec2 pPos = p.getPosition();

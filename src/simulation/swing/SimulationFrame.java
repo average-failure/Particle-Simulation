@@ -23,14 +23,13 @@ import simulation.Settings;
 
 public final class SimulationFrame extends JFrame {
 
-  private final JLayeredPane content = new JLayeredPane();
-  private final SimulationPanel simPanel = new SimulationPanel();
-
-  private boolean wasMaximised = false;
-
   private static final String EXIT = "exit";
   private static final String MIN_MAX = "minimise/maximise";
   private static final String PAUSE_RESUME = "pause/resume";
+
+  private final JLayeredPane content = new JLayeredPane();
+  private final SimulationPanel simPanel = new SimulationPanel();
+  private boolean wasMaximised = false;
 
   public SimulationFrame() {
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -105,6 +104,10 @@ public final class SimulationFrame extends JFrame {
     );
   }
 
+  void resizeSimulation() {
+    simPanel.resizeSimulation();
+  }
+
   private List<JComponent> getAllComponents(Container c) {
     Component[] comps = c.getComponents();
     List<JComponent> compList = new ArrayList<>();
@@ -157,10 +160,6 @@ public final class SimulationFrame extends JFrame {
         )
       );
     }
-  }
-
-  void resizeSimulation() {
-    simPanel.resizeSimulation();
   }
 
   private boolean isMaximized(boolean isDecorated) {

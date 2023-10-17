@@ -37,13 +37,6 @@ public class ChargedParticle extends Particle implements Gravity {
   private final short strength;
   private final Charge charge;
 
-  /**
-   * @return the charge
-   */
-  public Charge getCharge() {
-    return charge;
-  }
-
   public ChargedParticle(ParticleParams p) {
     super(p);
     strength = p.strength();
@@ -51,9 +44,23 @@ public class ChargedParticle extends Particle implements Gravity {
     colour = charge.colour();
   }
 
+  /**
+   * @return the charge
+   */
+  public Charge getCharge() {
+    return charge;
+  }
+
   @Override
   public short getStrength() {
     return strength;
+  }
+
+  @Override
+  public short getNearRadius() {
+    return (short) (
+      Settings.get(Settings.Constants.MAX_RADIUS) + (float) strength / 3
+    );
   }
 
   @Override
@@ -81,12 +88,5 @@ public class ChargedParticle extends Particle implements Gravity {
         GravityUtils.attract(this, p);
       }
     });
-  }
-
-  @Override
-  public short getNearRadius() {
-    return (short) (
-      Settings.get(Settings.Constants.MAX_RADIUS) + (float) strength / 3
-    );
   }
 }

@@ -19,12 +19,6 @@ public final class ClassConstructor {
   );
   private static final int NUM_PARTICLE_TYPES = PARTICLE_CLASSES.size();
 
-  private static final List<Class<?>> OBJECT_CLASSES = getClassesInPackage(
-    "simulation.body.object",
-    Environment.class
-  );
-  private static final int NUM_OBJECT_TYPES = OBJECT_CLASSES.size();
-
   public static Particle build(
     ParticleParams params,
     Class<? extends Particle> type
@@ -37,25 +31,18 @@ public final class ClassConstructor {
       ).getConstructor(ParticleParams.class)
         .newInstance(params);
     } catch (Exception e) {
-      e.printStackTrace();
       throw new IllegalStateException("Error creating particle");
     }
   }
 
-  public static Environment build(
-    ObjectParams params,
-    Class<? extends Environment> type
-  ) {
+  public static Environment build(ObjectParams params) {
     try {
-      return (Environment) (
-        type != null
-          ? type
-          : OBJECT_CLASSES.get(RANDOM.nextInt(NUM_OBJECT_TYPES))
-      ).getConstructor(ObjectParams.class)
+      return params
+        .type()
+        .getConstructor(ObjectParams.class)
         .newInstance(params);
     } catch (Exception e) {
-      e.printStackTrace();
-      throw new IllegalStateException("Error creating particle");
+      throw new IllegalStateException("Error creating object");
     }
   }
 

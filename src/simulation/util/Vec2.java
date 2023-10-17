@@ -7,7 +7,14 @@ public final class Vec2 implements Serializable {
 
   private static final long serialVersionUID = 532529248923659L;
 
+  public static Vec2 setAdd(Vec2 set, Vec2... add) {
+    final Vec2 newVec = new Vec2(add[0]);
+    for (int i = 1; i < add.length; i++) newVec.add(add[i]);
+    return set.set(newVec);
+  }
+
   private float x;
+
   private float y;
 
   public Vec2() {
@@ -157,12 +164,6 @@ public final class Vec2 implements Serializable {
     x -= scalar * Math.signum(x);
     y -= scalar * Math.signum(y);
     return this;
-  }
-
-  public static Vec2 setAdd(Vec2 set, Vec2... add) {
-    final Vec2 newVec = new Vec2(add[0]);
-    for (int i = 1; i < add.length; i++) newVec.add(add[i]);
-    return set.set(newVec);
   }
 
   /**
