@@ -1,9 +1,11 @@
 package simulation;
 
+import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -22,7 +24,7 @@ public class Simulation implements Serializable {
 
     private boolean value = false;
 
-    public boolean getValue() {
+    public boolean isTrue() {
       return value;
     }
 
@@ -37,16 +39,14 @@ public class Simulation implements Serializable {
 
   private final SpatialHash hash = new SpatialHash();
   private final Set<Particle> particles = ConcurrentHashMap.newKeySet();
-
   private final Set<Environment> objects = ConcurrentHashMap.newKeySet();
-  private short width;
 
+  private short width;
   private short height;
 
-  private final ArrayList<Grab> grabbed = new ArrayList<>();
+  private final HashSet<Grab> grabbed = new HashSet<>();
 
   private Vec2 preGrabPos;
-
   private Vec2 grabPos;
 
   public void start() {
@@ -139,6 +139,7 @@ public class Simulation implements Serializable {
     g.setColor(Environment.COLOUR);
     objects.forEach(o -> o.draw(g));
 
+    g.setComposite(AlphaComposite.SrcOver);
     particles.forEach(p -> {
       g.setColor(p.getColour());
       g.fill(p.getBounds());
@@ -149,10 +150,10 @@ public class Simulation implements Serializable {
     preGrabPos = new Vec2(position);
     grabPos = new Vec2(position);
     particles.forEach(p -> {
-      final float xOffset = grabPos.x() - p.getX();
-      final float yOffset = grabPos.y() - p.getY();
       if (p.getBounds().contains(grabPos.x(), grabPos.y())) {
-        grabbed.add(new Grab(p, xOffset, yOffset));
+        grabbed.add(
+          new Grab(p, grabPos.x() - p.getX(), grabPos.y() - p.getY())
+        );
         p.grab();
       }
     });
@@ -178,14 +179,9 @@ public class Simulation implements Serializable {
   }
 
   private void envCalculations(Environment o) {
-    final Stream<Particle> near = findNearParticles(
-      o.getCenter(),
-      o.getNearRadius()
-    );
+    o.update(findNearParticles(o.getCenter(), o.getNearRadius()));
 
-    if (o instanceof Splat) {
-      if (((Splat) o).updateSplat(near)) deleteObject(o);
-    } else o.update(near);
+    if (o instanceof Splat && ((Splat) o).isDead()) deleteObject(o);
   }
 
   private void calculations(Particle p) {
@@ -210,7 +206,7 @@ public class Simulation implements Serializable {
         });
     }
 
-    if (delete.getValue()) deleteParticle(p); else hash.newClient(p);
+    if (delete.isTrue()) deleteParticle(p); else hash.newClient(p);
   }
 
   private void splitParticle(Particle p) {
