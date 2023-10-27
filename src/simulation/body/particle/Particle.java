@@ -114,12 +114,8 @@ public class Particle implements Client {
     return true;
   }
 
-  public void update(
-    short width,
-    short height,
-    Stream<Particle> nearParticles
-  ) {
-    updateCalculations(width, height, nearParticles);
+  public void update(short width, short height) {
+    updateCalculations(width, height);
     updatePosition();
   }
 
@@ -262,19 +258,6 @@ public class Particle implements Client {
     if (lifeDrain > 1) lifeDrain -= 0.1 * dt; else lifeDrain = 1;
   }
 
-  /**
-   * @param width The width of the simulation
-   * @param height The height of the simulation
-   * @param nearParticles This stream will be used in overriding classes
-   */
-  protected void updateCalculations(
-    short width,
-    short height,
-    Stream<Particle> nearParticles
-  ) {
-    updateCalculations(width, height);
-  }
-
   private void updateColour() {
     if (getClass() != Particle.class) return;
     colour =
@@ -289,5 +272,9 @@ public class Particle implements Client {
     checkBoundaries(width, height);
     updateVelocity();
     updateStats();
+  }
+
+  public void affectNear(Stream<Particle> nearParticles) {
+    // Used in subclasses
   }
 }

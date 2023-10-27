@@ -1,5 +1,6 @@
 package simulation.body.object;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.RectangularShape;
@@ -36,6 +37,7 @@ public abstract class Environment implements Client {
   public abstract void update(Stream<Particle> nearParticles);
 
   public void draw(Graphics2D g) {
+    g.setComposite(AlphaComposite.SrcOver);
     g.fill(getBounds());
   }
 }

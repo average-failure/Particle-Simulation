@@ -64,13 +64,7 @@ public class ChargedParticle extends Particle implements Gravity {
   }
 
   @Override
-  protected void updateCalculations(
-    short width,
-    short height,
-    Stream<Particle> nearParticles
-  ) {
-    super.updateCalculations(width, height, nearParticles);
-
+  public void affectNear(Stream<Particle> nearParticles) {
     nearParticles.forEach(p -> {
       if (
         (

@@ -6,8 +6,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import simulation.Settings.Constants;
 import simulation.body.object.*;
@@ -40,11 +45,12 @@ public class Simulation implements Serializable {
   private final SpatialHash hash = new SpatialHash();
   private final Set<Particle> particles = ConcurrentHashMap.newKeySet();
   private final Set<Environment> objects = ConcurrentHashMap.newKeySet();
+  private final Set<Grab> grabbed = new HashSet<>();
+  private final transient ExecutorService pool = Executors.newCachedThreadPool();
+  private final List<Future<?>> futures = new ArrayList<>();
 
   private short width;
   private short height;
-
-  private final HashSet<Grab> grabbed = new HashSet<>();
 
   private Vec2 preGrabPos;
   private Vec2 grabPos;
@@ -119,8 +125,18 @@ public class Simulation implements Serializable {
   public void update() {
     final ArrayList<Particle> split = new ArrayList<>();
     final ArrayList<Particle> delete = new ArrayList<>();
+    particles.forEach(p -> futures.add(pool.submit(() -> calculations(p))));
+    futures.forEach(f -> {
+      try {
+        f.get();
+      } catch (InterruptedException | ExecutionException e) {
+        Thread.currentThread().interrupt();
+        e.printStackTrace();
+      }
+    }); // idk if multithreading is helping
     particles.forEach(p -> {
-      calculations(p);
+      p.affectNear(findNearParticles(p, p.getNearRadius()));
+      collisionCheck(p);
       if (p.isDead()) {
         if (p.getMass() > Settings.get(Constants.MIN_MASS) * 2) {
           split.add(p);
@@ -182,29 +198,36 @@ public class Simulation implements Serializable {
     o.update(findNearParticles(o.getCenter(), o.getNearRadius()));
 
     if (o instanceof Splat && ((Splat) o).isDead()) deleteObject(o);
+    // TODO: splat particles on collision with objects
   }
 
   private void calculations(Particle p) {
     hash.removeClient(p);
 
-    final Flag delete = new Flag();
+    boolean delete = false;
 
     if (p.getClass() == SplatParticle.class) {
-      if (((SplatParticle) p).updateSplat(width, height)) delete.setValue(true);
-    } else p.update(width, height, findNearParticles(p, p.getNearRadius()));
+      if (((SplatParticle) p).updateSplat(width, height)) delete = true;
+    } else p.update(width, height);
 
-    if (p.collisionEnabled()) {
-      findNearParticles(
-        p,
-        (short) (p.getRadius() + Settings.get(Constants.MAX_RADIUS))
-      )
-        .filter(Particle::collisionEnabled)
-        .forEach(p2 -> {
-          if (p.detectCollision(p2) && p instanceof SplatParticle) {
-            delete.setValue(true);
-          }
-        });
-    }
+    if (delete) deleteParticle(p);
+  }
+
+  private void collisionCheck(Particle p) {
+    if (!p.collisionEnabled()) return;
+
+    final Flag delete = new Flag();
+
+    findNearParticles(
+      p,
+      (short) (p.getRadius() + Settings.get(Constants.MAX_RADIUS))
+    )
+      .filter(Particle::collisionEnabled)
+      .forEach(p2 -> {
+        if (p.detectCollision(p2) && p instanceof SplatParticle) {
+          delete.setValue(true);
+        }
+      });
 
     if (delete.isTrue()) deleteParticle(p); else hash.newClient(p);
   }

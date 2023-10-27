@@ -71,13 +71,7 @@ public class CopyParticle extends Particle implements Gravity {
   }
 
   @Override
-  protected void updateCalculations(
-    short width,
-    short height,
-    Stream<Particle> nearParticles
-  ) {
-    super.updateCalculations(width, height, nearParticles);
-
+  public void affectNear(Stream<Particle> nearParticles) {
     if (copied == null) return;
 
     if (copied.getClass() == Particle.class) {
