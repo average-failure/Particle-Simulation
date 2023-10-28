@@ -1,13 +1,10 @@
 package simulation;
 
 import java.awt.AlphaComposite;
-import java.awt.Color;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,7 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
-import simulation.Settings.Constants;
+import simulation.Settings;
 import simulation.body.object.*;
 import simulation.body.particle.*;
 import simulation.hash.Client;
@@ -49,10 +46,8 @@ public class Simulation implements Serializable {
   private final Set<Particle> particles = ConcurrentHashMap.newKeySet();
   private final Set<Environment> objects = ConcurrentHashMap.newKeySet();
   private final Set<Grab> grabbed = new HashSet<>();
-  private final ArrayList<Particle> splitList = new ArrayList<>();
-  private final ArrayList<Particle> deleteList = new ArrayList<>();
   private final transient ExecutorService pool = Executors.newFixedThreadPool(
-    16
+    8
   );
   private final List<Future<?>> futures = new ArrayList<>();
 
@@ -63,7 +58,7 @@ public class Simulation implements Serializable {
   private Vec2 grabPos;
 
   public void start() {
-    for (short i = 0; i < Settings.get(Constants.INITIAL_PARTICLES); i++) {
+    for (short i = 0; i < Settings.INITIAL_PARTICLES; i++) {
       newParticle(
         new ParticleParams(
           MathUtils.randRange(width, 0),
@@ -130,36 +125,34 @@ public class Simulation implements Serializable {
   }
 
   public void update() {
-    splitList.clear();
-    deleteList.clear();
     futures.clear();
 
-    particles.forEach(p -> futures.add(pool.submit(() -> calculations(p))));
-    futures.forEach(f -> {
-      try {
-        f.get();
-      } catch (InterruptedException | ExecutionException e) {
-        Thread.currentThread().interrupt();
-        e.printStackTrace();
-      }
-    });
-
-    particles.forEach(p -> {
-      p.affectNear(findNearParticles(p, p.getNearRadius()));
-      collisionCheck(p);
-      if (p.isDead()) {
-        if (p.getMass() > Settings.get(Constants.MIN_MASS) * 2) {
-          splitList.add(p);
-        } else deleteList.add(p);
-      }
-    });
-
-    splitList.forEach(this::splitParticle);
-    deleteList.forEach(this::deleteParticle);
+    particles.forEach(p ->
+      futures.add(
+        pool.submit(() -> {
+          if (calculations(p)) return;
+          p.affectNear(findNearParticles(p, p.getNearRadius()));
+          if (collisionCheck(p)) return;
+        })
+      )
+    );
+    futures.forEach(this::block);
 
     objects.forEach(this::envCalculations);
 
     updateGrab();
+  }
+
+  private void block(Future<?> f) {
+    try {
+      f.get();
+    } catch (InterruptedException e) {
+      System.err.println("InterruptedException");
+      Thread.currentThread().interrupt();
+    } catch (ExecutionException e) {
+      System.err.println("ExecutionException");
+      e.printStackTrace();
+    }
   }
 
   public void draw(Graphics2D g) {
@@ -217,27 +210,40 @@ public class Simulation implements Serializable {
     // TODO: splat particles on collision with objects
   }
 
-  private void calculations(Particle p) {
+  /**
+   * @param p the particle to do calculations for
+   * @return {@code true} if the particle is deleted, {@code false} otherwise
+   */
+  private boolean calculations(Particle p) {
     hash.removeClient(p);
 
     boolean delete = false;
+    boolean split = false;
 
     if (p.getClass() == SplatParticle.class) {
       if (((SplatParticle) p).updateSplat(width, height)) delete = true;
     } else p.update(width, height);
 
-    if (delete) deleteParticle(p);
+    if (p.isDead()) {
+      if (p.getMass() > Settings.MIN_MASS * 2) {
+        split = true;
+      } else delete = true;
+    }
+
+    if (delete) deleteParticle(p); else if (split) splitParticle(p);
+    return delete || split;
   }
 
-  private void collisionCheck(Particle p) {
-    if (!p.collisionEnabled()) return;
+  /**
+   * @param p the particle to check collisions for
+   * @return {@code true} if the particle is deleted, {@code false} otherwise
+   */
+  private boolean collisionCheck(Particle p) {
+    if (!p.collisionEnabled()) return false;
 
     final Flag delete = new Flag();
 
-    findNearParticles(
-      p,
-      (short) (p.getRadius() + Settings.get(Constants.MAX_RADIUS))
-    )
+    findNearParticles(p, (short) (p.getRadius() + Settings.MAX_RADIUS))
       .filter(Particle::collisionEnabled)
       .forEach(p2 -> {
         if (p.detectCollision(p2) && p instanceof SplatParticle) {
@@ -246,6 +252,7 @@ public class Simulation implements Serializable {
       });
 
     if (delete.isTrue()) deleteParticle(p); else hash.newClient(p);
+    return delete.isTrue();
   }
 
   private void splitParticle(Particle p) {
@@ -273,20 +280,17 @@ public class Simulation implements Serializable {
 
   private void splitParticle(ParticleParams p, Class<? extends Particle> type) {
     final float LOSS = 0.95f;
-    final float THRESHOLD = (float) (
-      (p.mass() / Settings.get(Constants.MASS_RADIUS_RATIO)) * 0.75
-    );
+    final double THRESHOLD =
+      ((p.mass() / (double) Settings.MASS_RADIUS_RATIO) * 0.75);
 
     final ArrayList<Short> masses = new ArrayList<>();
 
     float r = p.mass() * LOSS;
 
     while (r > 0) {
-      if (r < Settings.get(Constants.MIN_MASS)) break;
+      if (r < Settings.MIN_MASS) break;
 
-      short s = (short) Math.floor(
-        MathUtils.randRange(r, Settings.get(Constants.MIN_MASS))
-      );
+      short s = (short) Math.floor(MathUtils.randRange(r, Settings.MIN_MASS));
       masses.add(MathUtils.randInt(masses.size()), s);
       r -= s;
     }
@@ -322,7 +326,7 @@ public class Simulation implements Serializable {
         initialLife
       );
 
-      if (mass / Settings.get(Constants.MASS_RADIUS_RATIO) > THRESHOLD) {
+      if (mass / Settings.MASS_RADIUS_RATIO > THRESHOLD) {
         splitParticle(newP, type);
       } else newParticle(newP, type);
     });
@@ -350,8 +354,9 @@ public class Simulation implements Serializable {
   }
 
   private Stream<Particle> findNearParticles(Vec2 c, short radius) {
-    return Arrays
-      .stream(hash.findNear(c, radius))
+    return hash
+      .findNear(c, radius)
+      .stream()
       .filter(Particle.class::isInstance)
       .map(c2 -> (Particle) c2);
   }

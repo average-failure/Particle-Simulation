@@ -26,7 +26,7 @@ public class Rectangle extends Environment implements Solid {
   public short getNearRadius() {
     return (short) Math.ceil(
       Math.sqrt((width * width / 4f) + (height * height / 4f)) +
-      Settings.get(Settings.Constants.MAX_RADIUS)
+      Settings.MAX_RADIUS
     );
   }
 
@@ -47,7 +47,7 @@ public class Rectangle extends Environment implements Solid {
 
   @Override
   public void detectCollision(Particle p) {
-    final float cor = Settings.get(Settings.COR);
+    final float cor = Settings.getCor();
 
     final float dx = p.getX() - getX();
     final float dy = p.getY() - getY();

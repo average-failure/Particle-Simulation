@@ -10,9 +10,10 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -141,24 +142,32 @@ public final class SimulationFrame extends JFrame {
   }
 
   private void addSliders(Container panel) {
-    for (Settings setting : Settings.values()) {
-      final StringBuilder sb = new StringBuilder();
-      for (String name : setting.name().split("_")) {
-        sb.append(
-          name.substring(0, 1).toUpperCase(Locale.ROOT) +
-          name.substring(1).toLowerCase(Locale.ROOT) +
-          " "
-        );
+    for (Method method : Settings.class.getDeclaredMethods()) {
+      if (!method.getName().startsWith("get")) continue;
+
+      float value = 0;
+      try {
+        value = (float) method.invoke(null) * 1000;
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        e.printStackTrace();
       }
-      final float value = Settings.get(setting) * 1000;
-      panel.add(
-        new Slider(
-          sb.toString().trim(),
-          Math.round(value / 5),
-          Math.round(value * 5),
-          (int) value
-        )
-      );
+
+      try {
+        panel.add(
+          new Slider(
+            method.getName().substring(3).replaceAll("([A-Z])", " $1").trim(),
+            Math.round(value / 5),
+            Math.round(value * 5),
+            (int) value,
+            Settings.class.getDeclaredMethod(
+                method.getName().replace("get", "set"),
+                method.getReturnType()
+              )
+          )
+        );
+      } catch (NoSuchMethodException | SecurityException e) {
+        e.printStackTrace();
+      }
     }
   }
 

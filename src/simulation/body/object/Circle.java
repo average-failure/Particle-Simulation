@@ -38,7 +38,7 @@ public class Circle extends Environment implements Solid {
 
   @Override
   public short getNearRadius() {
-    return (short) (radius + Settings.get(Settings.Constants.MAX_RADIUS));
+    return (short) (radius + Settings.MAX_RADIUS);
   }
 
   @Override
@@ -67,8 +67,7 @@ public class Circle extends Environment implements Solid {
     final Vec2 pVelocity = p.getVelocity();
     pVelocity.add(distance.add(dv));
 
-    final float speed =
-      pVelocity.dot(dv.normalise()) * Settings.get(Settings.COR);
+    final float speed = pVelocity.dot(dv.normalise()) * Settings.getCor();
 
     if (speed <= 0) return;
 

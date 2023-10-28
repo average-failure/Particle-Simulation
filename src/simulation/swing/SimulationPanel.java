@@ -164,8 +164,6 @@ class SimulationPanel extends JPanel {
 
   private static final long serialVersionUID = 343208457896132L;
 
-  private static final String NO_NULLS = "NO NULLS ALLOWED!";
-
   private final Timer timer;
   private final Simulation simulation;
   private final PausePanel pausePanel;

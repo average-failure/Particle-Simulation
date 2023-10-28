@@ -1,75 +1,113 @@
 package simulation;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 import simulation.body.particle.*;
 
-public enum Settings {
-  DT,
-  GRAVITY,
-  AIR_DENSITY,
-  COR,
-  ATTRACTION_STRENGTH,
-  REPULSION_STRENGTH;
+public final class Settings {
 
-  public enum Constants {
-    MIN_RADIUS,
-    MAX_RADIUS,
-    CELL_SIZE,
-    MASS_RADIUS_RATIO,
-    MIN_MASS,
-    MAX_MASS,
-    SOFTENING_CONSTANT,
-    AIR_CONSTANT,
-    INITIAL_PARTICLES,
-  }
+  private Settings() {}
 
+  // Variable settings
+  private static float dt = 0.1f;
+  private static float gravity = 9.8f;
+  private static float airDensity = 1.225f;
+  private static float cor = 0.95f;
+  private static float attractionStrength = 50;
+  private static float repulsionStrength = 100;
+
+  // Constant settings
+  public static final byte MIN_RADIUS = 3;
+  public static final byte MAX_RADIUS = 5;
+  public static final byte CELL_SIZE = (MAX_RADIUS - MIN_RADIUS) / 2;
+  public static final byte MASS_RADIUS_RATIO = 10;
+  public static final byte MIN_MASS = MIN_RADIUS * MASS_RADIUS_RATIO;
+  public static final byte MAX_MASS = MAX_RADIUS * MASS_RADIUS_RATIO;
+  public static final float SOFTENING_CONSTANT = 0.15f;
+  public static final float AIR_CONSTANT = 0.08f;
+  public static final short INITIAL_PARTICLES = 10_000;
   public static final Class<? extends Particle> INITIAL_PARTICLE_TYPE =
     Particle.class;
 
-  private static final Properties props = new Properties();
-
-  public static float get(Settings setting) {
-    return Float.parseFloat(props.getProperty(setting.name()));
+  /**
+   * @return the dt
+   */
+  public static float getDt() {
+    return dt;
   }
 
-  public static float get(Constants constant) {
-    return Float.parseFloat(props.getProperty(constant.name()));
+  /**
+   * @param dt the dt to set
+   */
+  public static void setDt(float dt) {
+    Settings.dt = dt;
   }
 
-  public static void put(Settings setting, float value) {
-    props.setProperty(setting.name(), Float.toString(value));
+  /**
+   * @return the gravity
+   */
+  public static float getGravity() {
+    return gravity;
   }
 
-  private static void put(Constants setting, float value) {
-    props.setProperty(setting.name(), Float.toString(value));
+  /**
+   * @param gravity the gravity to set
+   */
+  public static void setGravity(float gravity) {
+    Settings.gravity = gravity;
   }
 
-  public static void load() {
-    try (
-      InputStream in = Settings.class.getResourceAsStream("config.properties")
-    ) {
-      if (in == null) throw new IllegalStateException(
-        "Cannot find config.properties"
-      );
+  /**
+   * @return the airDensity
+   */
+  public static float getAirDensity() {
+    return airDensity;
+  }
 
-      props.load(in);
+  /**
+   * @param airDensity the airDensity to set
+   */
+  public static void setAirDensity(float airDensity) {
+    Settings.airDensity = airDensity;
+  }
 
-      put(
-        Constants.CELL_SIZE,
-        (get(Constants.MAX_RADIUS) - get(Constants.MIN_RADIUS)) / 2
-      );
-      put(
-        Constants.MIN_MASS,
-        get(Constants.MIN_RADIUS) * get(Constants.MASS_RADIUS_RATIO)
-      );
-      put(
-        Constants.MAX_MASS,
-        get(Constants.MAX_RADIUS) * get(Constants.MASS_RADIUS_RATIO)
-      );
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+  /**
+   * @return the cor
+   */
+  public static float getCor() {
+    return cor;
+  }
+
+  /**
+   * @param cor the cor to set
+   */
+  public static void setCor(float cor) {
+    Settings.cor = cor;
+  }
+
+  /**
+   * @return the attractionStrength
+   */
+  public static float getAttractionStrength() {
+    return attractionStrength;
+  }
+
+  /**
+   * @param attractionStrength the attractionStrength to set
+   */
+  public static void setAttractionStrength(float attractionStrength) {
+    Settings.attractionStrength = attractionStrength;
+  }
+
+  /**
+   * @return the repulsionStrength
+   */
+  public static float getRepulsionStrength() {
+    return repulsionStrength;
+  }
+
+  /**
+   * @param repulsionStrength the repulsionStrength to set
+   */
+  public static void setRepulsionStrength(float repulsionStrength) {
+    Settings.repulsionStrength = repulsionStrength;
   }
 }

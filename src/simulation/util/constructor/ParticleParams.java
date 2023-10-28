@@ -22,10 +22,7 @@ public final record ParticleParams(
     this(
       position,
       velocity,
-      (short) MathUtils.randRange(
-        Settings.get(Settings.Constants.MAX_MASS),
-        Settings.get(Settings.Constants.MIN_MASS)
-      ),
+      MathUtils.randRange(Settings.MAX_MASS, Settings.MIN_MASS),
       (short) 0,
       MathUtils.randRange(10_000, 1_000)
     );

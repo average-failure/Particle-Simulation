@@ -36,17 +36,14 @@ public final class GravityUtils {
     float dSq = dv.getLengthSq();
 
     float strengthMultiplier = mode == Mode.ATTRACT
-      ? Settings.get(Settings.ATTRACTION_STRENGTH)
-      : Settings.get(Settings.REPULSION_STRENGTH);
+      ? Settings.getAttractionStrength()
+      : Settings.getRepulsionStrength();
 
     float force = (float) (
       g1.getStrength() *
       100 *
       strengthMultiplier /
-      (
-        dSq *
-        Math.sqrt(dSq + Settings.get(Settings.Constants.SOFTENING_CONSTANT))
-      )
+      (dSq * Math.sqrt(dSq + Settings.SOFTENING_CONSTANT))
     );
 
     float acceleration = Math.min(
@@ -54,10 +51,8 @@ public final class GravityUtils {
       mode == Mode.ATTRACT ? 100 : 300
     );
 
-    return dv.mul(acceleration * Settings.get(Settings.DT));
+    return dv.mul(acceleration * Settings.getDt());
   }
 
-  private GravityUtils() {
-    throw new IllegalStateException("Utility class");
-  }
+  private GravityUtils() {}
 }

@@ -73,7 +73,5 @@ public final class ClassConstructor {
     return null;
   }
 
-  private ClassConstructor() {
-    throw new IllegalStateException("Utility class");
-  }
+  private ClassConstructor() {}
 }

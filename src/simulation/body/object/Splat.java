@@ -34,7 +34,7 @@ public class Splat extends Environment {
     super(params.position(), 0, 0);
     initRadius = params.radius();
     radius = initRadius;
-    drainRate = (float) (Settings.get(Settings.DT) * (Math.random() + 0.5));
+    drainRate = (float) (Settings.getDt() * (Math.random() + 0.5));
 
     bounds =
       new Ellipse2D.Float(
@@ -70,8 +70,7 @@ public class Splat extends Environment {
 
   @Override
   public void update(Stream<Particle> nearParticles) {
-    final float pow =
-      1 - radius / (Settings.get(Settings.Constants.MAX_RADIUS) * 500);
+    final float pow = 1 - radius / (Settings.MAX_RADIUS * 500);
     nearParticles.forEach(p ->
       affected.add(
         new Affected(
@@ -199,7 +198,7 @@ final class Affected {
   public boolean tick() {
     particle.getVelocity().pow(slowEffect);
     trail.add(new Position(getX(), getY(), time));
-    time -= Settings.get(Settings.DT) * 10;
+    time -= Settings.getDt() * 10;
     return time <= 0;
   }
 
