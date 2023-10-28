@@ -75,53 +75,12 @@ public class CopyParticle extends Particle implements Gravity {
     if (copied == null) return;
 
     if (copied.getClass() == Particle.class) {
-      colour =
-        mixColour(
-          BASE_COLOUR,
-          Color.getHSBColor(
-            Math.min(330f / 360, velocity.getLength() / 800),
-            0.9f,
-            0.75f
-          ),
-          COLOUR_MIX
-        );
-    } else if (copied instanceof AttractorParticle) {
-      nearParticles.forEach(p -> GravityUtils.attract(this, p));
-    } else if (copied instanceof RepulserParticle) {
-      nearParticles.forEach(p -> GravityUtils.repel(this, p));
-    } else if (copied instanceof ChargedParticle) {
-      nearParticles.forEach(this::doCharged);
-    }
+      colour = mixColour(BASE_COLOUR, getColour(velocity), COLOUR_MIX);
+    } else copied.affectNear(this, nearParticles);
 
     if (copyDuration > 0) copyDuration -= 1; else {
       copied = null;
       colour = BASE_COLOUR;
-    }
-  }
-
-  private void doCharged(Particle p) {
-    if (
-      (
-        p instanceof ChargedParticle &&
-        ((ChargedParticle) copied).getCharge() ==
-        ((ChargedParticle) p).getCharge()
-      ) ||
-      (
-        p instanceof AttractorParticle &&
-        ((ChargedParticle) copied).getCharge() == Charge.POSITIVE
-      ) ||
-      (
-        p instanceof RepulserParticle &&
-        ((ChargedParticle) copied).getCharge() == Charge.NEGATIVE
-      )
-    ) {
-      GravityUtils.repel(this, p);
-    } else if (
-      p instanceof ChargedParticle ||
-      p instanceof AttractorParticle ||
-      p instanceof RepulserParticle
-    ) {
-      GravityUtils.attract(this, p);
     }
   }
 

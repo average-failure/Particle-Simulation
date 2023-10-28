@@ -64,22 +64,24 @@ public class ChargedParticle extends Particle implements Gravity {
   }
 
   @Override
-  public void affectNear(Stream<Particle> nearParticles) {
-    nearParticles.forEach(p -> {
+  protected void affectNear(Particle p, Stream<Particle> nearParticles) {
+    if (!(p instanceof Gravity)) return;
+    nearParticles.forEach(p1 -> {
       if (
         (
-          p instanceof ChargedParticle && charge == ((ChargedParticle) p).charge
+          p1 instanceof ChargedParticle &&
+          charge == ((ChargedParticle) p1).charge
         ) ||
-        (p instanceof AttractorParticle && charge == Charge.POSITIVE) ||
-        (p instanceof RepulserParticle && charge == Charge.NEGATIVE)
+        (p1 instanceof AttractorParticle && charge == Charge.POSITIVE) ||
+        (p1 instanceof RepulserParticle && charge == Charge.NEGATIVE)
       ) {
-        GravityUtils.repel(this, p);
+        GravityUtils.repel((Gravity) p, p1);
       } else if (
-        p instanceof ChargedParticle ||
-        p instanceof AttractorParticle ||
-        p instanceof RepulserParticle
+        p1 instanceof ChargedParticle ||
+        p1 instanceof AttractorParticle ||
+        p1 instanceof RepulserParticle
       ) {
-        GravityUtils.attract(this, p);
+        GravityUtils.attract((Gravity) p, p1);
       }
     });
   }

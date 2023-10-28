@@ -260,12 +260,15 @@ public class Particle implements Client {
 
   private void updateColour() {
     if (getClass() != Particle.class) return;
-    colour =
-      Color.getHSBColor(
-        Math.min(330f / 360, velocity.getLength() / 800),
-        0.9f,
-        0.75f
-      );
+    colour = Particle.getColour(velocity);
+  }
+
+  protected static Color getColour(Vec2 velocity) {
+    return Color.getHSBColor(
+      Math.min(330f / 360, velocity.getLength() / 800),
+      0.9f,
+      0.75f
+    );
   }
 
   private void updateCalculations(short width, short height) {
@@ -275,6 +278,10 @@ public class Particle implements Client {
   }
 
   public void affectNear(Stream<Particle> nearParticles) {
+    affectNear(this, nearParticles);
+  }
+
+  protected void affectNear(Particle p, Stream<Particle> nearParticles) {
     // Used in subclasses
   }
 }

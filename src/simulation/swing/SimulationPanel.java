@@ -17,61 +17,25 @@ import simulation.util.constructor.ObjectParams;
 
 class SimulationPanel extends JPanel {
 
-  enum MouseMode {
+  private enum MouseMode {
     NEW_PARTICLE,
     NEW_OBJECT,
     GRAB_PARTICLES,
-    DELETE_OBJECT;
-
-    public static MouseMode valueOfStr(String mode) {
-      try {
-        return valueOf(mode.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-        System.out.println("Invalid mode: " + mode);
-        return null;
-      } catch (NullPointerException e) {
-        System.out.println(NO_NULLS);
-        return null;
-      }
-    }
+    DELETE_OBJECT,
   }
 
-  enum ParticleType {
+  private enum ParticleType {
     PARTICLE,
     ATTRACTOR_PARTICLE,
     REPULSER_PARTICLE,
     CHARGED_PARTICLE,
     COPY_PARTICLE,
-    SPLAT_PARTICLE;
-
-    public static ParticleType valueOfStr(String type) {
-      try {
-        return valueOf(type.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-        System.out.println("Invalid type: " + type);
-        return null;
-      } catch (NullPointerException e) {
-        System.out.println(NO_NULLS);
-        return null;
-      }
-    }
+    SPLAT_PARTICLE,
   }
 
-  enum ObjectType {
+  private enum ObjectType {
     RECTANGLE,
-    CIRCLE;
-
-    public static ObjectType valueOfStr(String type) {
-      try {
-        return valueOf(type.trim().replace(" ", "_").toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-        System.out.println("Invalid type: " + type);
-        return null;
-      } catch (NullPointerException e) {
-        System.out.println(NO_NULLS);
-        return null;
-      }
-    }
+    CIRCLE,
   }
 
   private enum PressType {
@@ -81,6 +45,10 @@ class SimulationPanel extends JPanel {
     CIRCLE,
     GRAB_PARTICLES,
     DELETE_OBJECT,
+  }
+
+  private String enumFormat(String str) {
+    return str.trim().replace(" ", "_").toUpperCase(Locale.ROOT);
   }
 
   private final class CustomMouseListener extends MouseInputAdapter {
@@ -199,20 +167,19 @@ class SimulationPanel extends JPanel {
   private static final String NO_NULLS = "NO NULLS ALLOWED!";
 
   private final Timer timer;
-
   private final Simulation simulation;
+  private final PausePanel pausePanel;
 
   private final Vec2 initialMousePosition = new Vec2();
-
   private final Vec2 mousePosition = new Vec2();
 
   private PressType pressed = PressType.NONE;
-
   private MouseMode mouseMode = MouseMode.NEW_PARTICLE;
   private ParticleType particleType = ParticleType.PARTICLE;
   private ObjectType objectType = ObjectType.RECTANGLE;
 
-  private final PausePanel pausePanel;
+  private static final float ALPHA = 0.05f;
+  private double frameTime;
 
   public SimulationPanel() {
     super(true);
@@ -226,7 +193,13 @@ class SimulationPanel extends JPanel {
       new Timer(
         10,
         e -> {
+          final long time = System.currentTimeMillis();
           simulation.update();
+          frameTime =
+            ALPHA *
+            (System.currentTimeMillis() - time) +
+            (1 - ALPHA) *
+            frameTime;
           repaint();
         }
       );
@@ -237,19 +210,19 @@ class SimulationPanel extends JPanel {
   }
 
   public void setMouseMode(String mode) {
-    MouseMode modeEnum = MouseMode.valueOfStr(mode);
+    final MouseMode modeEnum = MouseMode.valueOf(enumFormat(mode));
     if (modeEnum == null) return;
     mouseMode = modeEnum;
   }
 
   public void setParticleType(String type) {
-    ParticleType typeEnum = ParticleType.valueOfStr(type);
+    final ParticleType typeEnum = ParticleType.valueOf(enumFormat(type));
     if (typeEnum == null) return;
     particleType = typeEnum;
   }
 
   public void setObjectType(String type) {
-    ObjectType typeEnum = ObjectType.valueOfStr(type);
+    final ObjectType typeEnum = ObjectType.valueOf(enumFormat(type));
     if (typeEnum == null) return;
     objectType = typeEnum;
   }
@@ -289,18 +262,21 @@ class SimulationPanel extends JPanel {
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
     simulation.draw((Graphics2D) g);
+
     if (pressed != PressType.NONE) drawOverlay(g);
+
     g.setColor(Color.LIGHT_GRAY);
     g.setFont(getFont());
+    final int fontHeight = g.getFontMetrics().getHeight();
+
+    g.drawString("Particles: " + simulation.getNumParticles(), 10, fontHeight);
+
+    g.drawString("Objects: " + simulation.getNumObjects(), 10, fontHeight * 2);
+
     g.drawString(
-      "Particles: " + simulation.getNumParticles(),
+      String.format("Frame Time: %.2f", frameTime),
       10,
-      g.getFontMetrics().getHeight()
-    );
-    g.drawString(
-      "Objects: " + simulation.getNumObjects(),
-      10,
-      g.getFontMetrics().getHeight() * 2
+      fontHeight * 3
     );
   }
 

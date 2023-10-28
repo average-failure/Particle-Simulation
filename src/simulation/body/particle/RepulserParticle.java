@@ -30,7 +30,8 @@ public class RepulserParticle extends Particle implements Gravity {
   }
 
   @Override
-  public void affectNear(Stream<Particle> nearParticles) {
-    nearParticles.forEach(p -> GravityUtils.repel(this, p));
+  protected void affectNear(Particle p, Stream<Particle> nearParticles) {
+    if (!(p instanceof Gravity)) return;
+    nearParticles.forEach(p1 -> GravityUtils.repel((Gravity) p, p1));
   }
 }

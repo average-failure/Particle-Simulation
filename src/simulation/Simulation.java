@@ -1,7 +1,10 @@
 package simulation;
 
 import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +49,11 @@ public class Simulation implements Serializable {
   private final Set<Particle> particles = ConcurrentHashMap.newKeySet();
   private final Set<Environment> objects = ConcurrentHashMap.newKeySet();
   private final Set<Grab> grabbed = new HashSet<>();
-  private final transient ExecutorService pool = Executors.newCachedThreadPool();
+  private final ArrayList<Particle> splitList = new ArrayList<>();
+  private final ArrayList<Particle> deleteList = new ArrayList<>();
+  private final transient ExecutorService pool = Executors.newFixedThreadPool(
+    16
+  );
   private final List<Future<?>> futures = new ArrayList<>();
 
   private short width;
@@ -123,8 +130,10 @@ public class Simulation implements Serializable {
   }
 
   public void update() {
-    final ArrayList<Particle> split = new ArrayList<>();
-    final ArrayList<Particle> delete = new ArrayList<>();
+    splitList.clear();
+    deleteList.clear();
+    futures.clear();
+
     particles.forEach(p -> futures.add(pool.submit(() -> calculations(p))));
     futures.forEach(f -> {
       try {
@@ -133,18 +142,20 @@ public class Simulation implements Serializable {
         Thread.currentThread().interrupt();
         e.printStackTrace();
       }
-    }); // idk if multithreading is helping
+    });
+
     particles.forEach(p -> {
       p.affectNear(findNearParticles(p, p.getNearRadius()));
       collisionCheck(p);
       if (p.isDead()) {
         if (p.getMass() > Settings.get(Constants.MIN_MASS) * 2) {
-          split.add(p);
-        } else delete.add(p);
+          splitList.add(p);
+        } else deleteList.add(p);
       }
     });
-    split.forEach(this::splitParticle);
-    delete.forEach(this::deleteParticle);
+
+    splitList.forEach(this::splitParticle);
+    deleteList.forEach(this::deleteParticle);
 
     objects.forEach(this::envCalculations);
 
@@ -152,6 +163,11 @@ public class Simulation implements Serializable {
   }
 
   public void draw(Graphics2D g) {
+    g.setRenderingHint(
+      RenderingHints.KEY_ANTIALIASING,
+      RenderingHints.VALUE_ANTIALIAS_ON
+    );
+
     g.setColor(Environment.COLOUR);
     objects.forEach(o -> o.draw(g));
 
