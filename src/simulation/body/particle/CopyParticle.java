@@ -3,10 +3,8 @@ package simulation.body.particle;
 import java.awt.Color;
 import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Stream;
-import simulation.body.particle.ChargedParticle.Charge;
 import simulation.util.constructor.ParticleParams;
 import simulation.util.gravity.Gravity;
-import simulation.util.gravity.GravityUtils;
 
 public class CopyParticle extends Particle implements Gravity {
 

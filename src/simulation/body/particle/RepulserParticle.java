@@ -25,7 +25,7 @@ public class RepulserParticle extends Particle implements Gravity {
   @Override
   public short getNearRadius() {
     return (short) (
-      Settings.get(Settings.Constants.MAX_RADIUS) + (float) strength / 2
+      Settings.get(Settings.Constants.MAX_RADIUS) + strength / 2f
     );
   }
 
