@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.geom.Ellipse2D;
 import java.util.stream.Stream;
 import simulation.Settings;
+import simulation.Settings.Constants;
 import simulation.hash.Client;
 import simulation.util.MathUtils;
 import simulation.util.Vec2;
@@ -39,9 +40,9 @@ public class Particle implements Client {
     mass = p.mass();
     radius =
       (short) MathUtils.clamp(
-        p.mass() / (double) Settings.MASS_RADIUS_RATIO,
-        Settings.MIN_RADIUS,
-        Settings.MAX_RADIUS
+        p.mass() / Settings.get(Constants.MASS_RADIUS_RATIO),
+        Settings.get(Constants.MIN_RADIUS),
+        Settings.get(Constants.MAX_RADIUS)
       );
 
     bounds = new Ellipse2D.Float(position.x(), position.y(), radius, radius);
@@ -94,7 +95,7 @@ public class Particle implements Client {
 
     final Vec2 rv = new Vec2(other.getVelocity()).sub(velocity);
 
-    final float speed = rv.dot(dv.normalise()) * Settings.getCor();
+    final float speed = rv.dot(dv.normalise()) * Settings.get(Settings.COR);
 
     if (speed <= 0) return false;
 
@@ -179,7 +180,7 @@ public class Particle implements Client {
     final float vx = Math.abs(velocity.x());
     final float vy = Math.abs(velocity.y());
 
-    final float cor = Settings.getCor();
+    final float cor = Settings.get(Settings.COR);
 
     if ((diff = x - radius) < 0) {
       position.setX(radius);
@@ -209,7 +210,7 @@ public class Particle implements Client {
   }
 
   protected final void updatePosition() {
-    position.add(new Vec2(velocity).mul(Settings.getDt()));
+    position.add(new Vec2(velocity).mul(Settings.get(Settings.DT)));
     bounds.setFrame(
       position.x() - radius,
       position.y() - radius,
@@ -219,9 +220,9 @@ public class Particle implements Client {
   }
 
   protected final void updateVelocity() {
-    final float dt = Settings.getDt();
+    final float dt = Settings.get(Settings.DT);
     // Gravity
-    velocity.add(0, Settings.getGravity() * dt);
+    velocity.add(0, Settings.get(Settings.GRAVITY) * dt);
 
     // Air resistance
     velocity.sub(
@@ -230,8 +231,8 @@ public class Particle implements Client {
         .mul(
           (float) Math.PI *
           ((radius * radius) / 50_000f) *
-          Settings.AIR_CONSTANT *
-          Settings.getAirDensity() *
+          Settings.get(Constants.AIR_CONSTANT) *
+          Settings.get(Settings.AIR_DENSITY) *
           dt
         )
     );
@@ -240,11 +241,11 @@ public class Particle implements Client {
   }
 
   protected void updateStats() {
-    final float time = Settings.getDt() * 100;
+    final float time = Settings.get(Settings.DT) * 100;
     if (immortality > 0) immortality -= time;
     if (intangibility > 0) intangibility -= time;
 
-    final float dt = Settings.getDt();
+    final float dt = Settings.get(Settings.DT);
     if (lifespan > 0 && !grabbed) {
       float drain = 0.1f;
 

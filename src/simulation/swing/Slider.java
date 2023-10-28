@@ -6,13 +6,13 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.Locale;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.plaf.basic.BasicSliderUI;
+import simulation.Settings;
 
 class Slider extends JPanel {
 
@@ -98,31 +98,23 @@ class Slider extends JPanel {
 
       addChangeListener(e -> {
         int v = ((JSlider) e.getSource()).getValue();
-        try {
-          change.invoke(null, v / 1000f);
-        } catch (IllegalAccessException | InvocationTargetException ex) {
-          ex.printStackTrace();
-        }
+        Settings.put(
+          Settings.valueOf(textRaw.replace(" ", "_").toUpperCase(Locale.ROOT)),
+          v / 1000f
+        );
         label.setText(text + (v / 1000f) + units);
       });
     }
   }
 
+  private final String textRaw;
   private final String text;
   private final String units;
-  private final transient Method change;
 
-  public Slider(
-    String text,
-    String units,
-    int min,
-    int max,
-    int value,
-    Method change
-  ) {
+  public Slider(String text, String units, int min, int max, int value) {
+    textRaw = text;
     this.text = text + ": ";
     this.units = units == null || units.isEmpty() ? "" : " " + units;
-    this.change = change;
     setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
     final Label label = new Label(this.text + value / 1000f + this.units);
     add(label);
@@ -130,7 +122,7 @@ class Slider extends JPanel {
     setOpaque(false);
   }
 
-  public Slider(String text, int min, int max, int value, Method change) {
-    this(text, null, min, max, value, change);
+  public Slider(String text, int min, int max, int value) {
+    this(text, null, min, max, value);
   }
 }

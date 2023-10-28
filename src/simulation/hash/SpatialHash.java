@@ -47,7 +47,7 @@ public final class SpatialHash implements Serializable {
 
     final Set<Future<Set<Client>>> futures = new HashSet<>(0);
 
-    final float cellSize = Settings.CELL_SIZE;
+    final float cellSize = Settings.get(Settings.Constants.CELL_SIZE);
     final float cellX = client.x() / cellSize;
     final float cellY = client.y() / cellSize;
     final short cellRadius = (short) Math.ceil(radius / cellSize);
@@ -88,7 +88,7 @@ public final class SpatialHash implements Serializable {
   public Set<Client> findNear(Vec2 client, short radius) {
     if (client == null || radius == 0) return new HashSet<>();
 
-    final float cellSize = Settings.CELL_SIZE;
+    final float cellSize = Settings.get(Settings.Constants.CELL_SIZE);
     final float cellX = client.x() / cellSize;
     final float cellY = client.y() / cellSize;
     final short cellRadius = (short) Math.ceil(radius / cellSize);
@@ -134,7 +134,7 @@ public final class SpatialHash implements Serializable {
   }
 
   private String[] getHashKey(Client client) {
-    final float cellSize = Settings.CELL_SIZE;
+    final float cellSize = Settings.get(Settings.Constants.CELL_SIZE);
     final float x = client.getX() / cellSize;
     final float y = client.getY() / cellSize;
     return new String[] {
